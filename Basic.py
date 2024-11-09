@@ -91,22 +91,23 @@ class Position:
 # TOKENS
 #######################################
 
-TT_INT			= 'INT'
-TT_FLOAT    	= 'FLOAT'
-TT_IDENTIFIER	= 'IDENTIFIER'
-TT_KEYWORD		= 'KEYWORD'
-TT_PLUS     	= 'PLUS'
-TT_MINUS    	= 'MINUS'
-TT_MUL      	= 'MUL'
-TT_DIV      	= 'DIV'
-TT_POW			= 'POW'
+
+TT_INT = 'Numerito'
+TT_FLOAT = 'Flotador'
+TT_PLUS = 'Sumale'
+TT_MINUS = 'Restale'
+TT_MUL = 'Multiplicale'
+TT_DIV = 'Dividilo'
+TT_LPAREN = 'ParentesisL'
+TT_RPAREN = 'ParentesisR'
+TT_EOF = 'FinDelArchivo'
+TT_IDENTIFIER	= 'Identificador'
+TT_KEYWORD		= 'PalabraClave'
+TT_POW			= 'Poder'
 TT_EQ			= 'EQ'
-TT_LPAREN   	= 'LPAREN'
-TT_RPAREN   	= 'RPAREN'
-TT_EOF			= 'EOF'
 
 KEYWORDS = [
-	'CAJITA'
+	'Cajita'
 ]
 
 class Token:
@@ -378,7 +379,7 @@ class Parser:
 	def expr(self):
 		res = ParseResult()
 
-		if self.current_tok.matches(TT_KEYWORD, 'CAJITA'):
+		if self.current_tok.matches(TT_KEYWORD, 'Cajita'):
 			res.register_advancement()
 			self.advance()
 
@@ -491,7 +492,7 @@ class Number:
 			if other.value == 0:
 				return None, RTError(
 					other.pos_start, other.pos_end,
-					'Division by zero',
+					'Como va a dividir por cero, sea serio',
 					self.context
 				)
 
@@ -570,7 +571,7 @@ class Interpreter:
 		if not value:
 			return res.failure(RTError(
 				node.pos_start, node.pos_end,
-				f"'{var_name}' is not defined",
+				f"'{var_name}' no esta definido",
 				context
 			))
 
