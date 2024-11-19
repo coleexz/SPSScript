@@ -979,7 +979,6 @@ class Parser:
   def for_expr(self):
     res = ParseResult()
 
-    # Palabra clave 'FOR'
     if not self.current_tok.matches(TT_KEYWORD, 'FOR'):
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
@@ -988,7 +987,6 @@ class Parser:
     res.register_advancement()
     self.advance()
 
-    # Palabra clave obligatoria 'VAR'
     if not self.current_tok.matches(TT_KEYWORD, 'VAR'):
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
@@ -997,7 +995,6 @@ class Parser:
     res.register_advancement()
     self.advance()
 
-    # Identificador de la variable
     if self.current_tok.type != TT_IDENTIFIER:
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
@@ -1007,7 +1004,6 @@ class Parser:
     res.register_advancement()
     self.advance()
 
-    # Signo '='
     if self.current_tok.type != TT_EQ:
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
@@ -1016,11 +1012,9 @@ class Parser:
     res.register_advancement()
     self.advance()
 
-    # Valor inicial
     start_value = res.register(self.expr())
     if res.error: return res
 
-    # Palabra clave 'TO'
     if not self.current_tok.matches(TT_KEYWORD, 'TO'):
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
@@ -1029,11 +1023,9 @@ class Parser:
     res.register_advancement()
     self.advance()
 
-    # Valor final
     end_value = res.register(self.expr())
     if res.error: return res
 
-    # Palabra clave opcional 'STEP'
     if self.current_tok.matches(TT_KEYWORD, 'STEP'):
         res.register_advancement()
         self.advance()
@@ -1042,7 +1034,6 @@ class Parser:
     else:
         step_value = None
 
-    # Palabra clave 'THEN'
     if not self.current_tok.matches(TT_KEYWORD, 'THEN'):
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
@@ -1051,15 +1042,13 @@ class Parser:
     res.register_advancement()
     self.advance()
 
-    # Cuerpo del FOR
     if self.current_tok.type == TT_NEWLINE:
         res.register_advancement()
         self.advance()
 
         body = res.register(self.statements())
         if res.error: return res
-
-        # Palabra clave 'END'
+        
         if not self.current_tok.matches(TT_KEYWORD, 'END'):
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,

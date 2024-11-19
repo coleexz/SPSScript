@@ -28,7 +28,7 @@ PRINT(IS_LIST(x))
 
 VAR arr = []
 
-FOR VAR i = 0 TO 10  THEN;
+FOR VAR i = 0 TO 10  STEP 2 THEN;
     PRINT(i)
     APPEND(arr, i)
     IF i < 5 THEN;
