@@ -4,7 +4,6 @@ VAR x = [1,2,3]
 
 PRINT(x)
 
-
 APPEND(x, 4)
 PRINT(x)
 
@@ -12,13 +11,13 @@ PRINT(x)
 VAR name = INPUT()
 PRINT(name)
 
+PRINT(LEN(x))
 
 IF 5==5 THEN;
     PRINT("HELLO")
 ELSE
     PRINT("ADIOS")
 END;
-
 
 FUN add (a,b) -> a + b
 PRINT(add(5,5))
