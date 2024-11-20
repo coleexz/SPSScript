@@ -1,5 +1,7 @@
 VAR x = [1,2,3]
 
+#buenos dias, como tamos como tamos
+
 PRINT(x)
 
 
