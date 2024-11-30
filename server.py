@@ -3,8 +3,6 @@ import subprocess
 import os
 import flask_cors
 
-
-
 app = Flask(__name__)
 flask_cors.CORS(app)
 
@@ -15,6 +13,7 @@ def run_script():
         data = request.json
         file_name = data.get('file_name')
         file_content = data.get('file_content')
+        user_input = data.get('input', "")  # Leer entrada del usuario, si existe
 
         if not file_name or not file_content:
             return jsonify({"error": "El nombre y contenido del archivo son obligatorios"}), 400
@@ -35,7 +34,7 @@ def run_script():
             command,
             text=True,
             capture_output=True,
-            input="",  # Para evitar que espere entrada
+            input=user_input,  # Enviar la entrada del usuario al comando
             timeout=10  # Establecer un tiempo máximo de espera
         )
 
@@ -60,7 +59,6 @@ def run_script():
     except Exception as e:
         print(f"Error inesperado: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(debug=True)

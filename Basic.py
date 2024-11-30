@@ -1787,21 +1787,14 @@ class BuiltInFunction(BaseFunction):
     return RTResult().success(String(str(exec_ctx.symbol_table.get('value'))))
   execute_print_ret.arg_names = ['value']
 
+
   def execute_input(self, exec_ctx):
     text = input()
     return RTResult().success(String(text))
   execute_input.arg_names = []
 
-  def execute_input_int(self, exec_ctx):
-    while True:
-      text = input()
-      try:
-        number = int(text)
-        break
-      except ValueError:
-        print(f"'{text}' must be an integer. Try again!")
-    return RTResult().success(Boolean(number))
-  execute_input_int.arg_names = []
+
+
 
   def execute_clear(self, exec_ctx):
     os.system('cls' if os.name == 'nt' else 'cls')
@@ -2283,6 +2276,8 @@ global_symbol_table.set("Saca", BuiltInFunction.pop)
 global_symbol_table.set("EXTEND", BuiltInFunction.extend)
 global_symbol_table.set("Mide", BuiltInFunction.len)
 global_symbol_table.set("RUN", BuiltInFunction.run)
+global_symbol_table.set("__input__", String(""))
+
 
 def run(fn, text):
   lexer = Lexer(fn, text)

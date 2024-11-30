@@ -20,6 +20,7 @@ function App() {
     const [tabs, setTabs] = useState([{ id: 0, name: "Nuevo archivo", content: "" }]);
     const [activeTab, setActiveTab] = useState(0);
     const [outputContent, setOutputContent] = useState("");
+    const [inputContent, setInputContent] = useState(""); // Estado para el input
     const [saveDialogOpen, setSaveDialogOpen] = useState(false);
     const [customFileName, setCustomFileName] = useState("");
 
@@ -91,7 +92,11 @@ function App() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ file_name: fileName, file_content: fileContent }),
+                body: JSON.stringify({
+                    file_name: fileName,
+                    file_content: fileContent,
+                    input: inputContent, // Enviar el contenido del input
+                }),
             });
 
             if (!response.ok) {
@@ -101,14 +106,11 @@ function App() {
             }
 
             const data = await response.json();
-            setOutputContent(`Resultado:\n${data.output}`);
+            setOutputContent(`${data.output}`);
         } catch (error) {
             setOutputContent(`Error de conexión:\n${error.message}`);
         }
     };
-
-
-
 
     return (
         <Box
@@ -119,17 +121,15 @@ function App() {
                 display: "flex",
                 flexDirection: "column",
                 p: 2,
-                overflow: "hidden", // Asegura que no haya scroll en toda la página
-                width: "98vw", // Fija el ancho de la página
-                maxWidth: "98vw", // Fija el ancho máximo de la página
+                overflow: "hidden",
+                width: "98vw",
+                maxWidth: "98vw",
             }}
         >
-            {/* Título */}
             <Typography variant="h4" sx={{ fontFamily: "monospace", mb: 3 }}>
                 San Pedro Script Interpreter
             </Typography>
 
-            {/* Botones principales */}
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                 <Button
                     variant="contained"
@@ -165,7 +165,6 @@ function App() {
                 </IconButton>
             </Box>
 
-            {/* Contenedor de Tabs y Editor */}
             <Box
                 sx={{
                     flex: 1,
@@ -175,11 +174,10 @@ function App() {
                     overflow: "hidden",
                 }}
             >
-                {/* Tabs */}
                 <Box
                     sx={{
-                        overflowX: "auto", // Scroll horizontal limitado a los tabs
-                        whiteSpace: "nowrap", // Evita que las pestañas se rompan en varias líneas
+                        overflowX: "auto",
+                        whiteSpace: "nowrap",
                         borderBottom: "1px solid #444",
                     }}
                 >
@@ -194,7 +192,7 @@ function App() {
                             <Tab
                                 key={tab.id}
                                 label={
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "white" }}>
                                         {tab.name}
                                         {tabs.length > 1 && (
                                             <IconButton
@@ -214,7 +212,6 @@ function App() {
                     </Tabs>
                 </Box>
 
-                {/* Editor de código */}
                 <Box
                     sx={{
                         flex: 2,
@@ -252,15 +249,7 @@ function App() {
                 </Box>
             </Box>
 
-            {/* Salida e Input */}
-            <Box
-                sx={{
-                    display: "flex",
-                    gap: 2,
-                    mt: 2,
-                }}
-            >
-                {/* Salida */}
+            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
                 <Box
                     sx={{
                         flex: 1,
@@ -297,7 +286,6 @@ function App() {
                     />
                 </Box>
 
-                {/* Input */}
                 <Box
                     sx={{
                         flex: 1,
@@ -317,6 +305,8 @@ function App() {
                         multiline
                         fullWidth
                         rows={10}
+                        value={inputContent}
+                        onChange={(e) => setInputContent(e.target.value)} // Conectar el estado del input
                         variant="outlined"
                         placeholder="Escribe el input aquí..."
                         sx={{
@@ -333,7 +323,6 @@ function App() {
                 </Box>
             </Box>
 
-            {/* Diálogo para guardar archivo */}
             <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
                 <DialogTitle>Guardar archivo</DialogTitle>
                 <DialogContent>
