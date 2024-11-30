@@ -8,6 +8,7 @@ import string
 import os
 import math
 
+
 #######################################
 # CONSTANTS
 #######################################
@@ -353,12 +354,8 @@ class Lexer:
     return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
   def skip_comment(self):
-    self.advance()
-
-    while self.current_char != '\n':
-      self.advance()
-
-    self.advance()
+    while self.current_char != '\n' and self.current_char is not None:
+        self.advance()
 
 #######################################
 # NODES
@@ -645,7 +642,7 @@ class Parser:
             self.advance()
             args = []
 
-            if self.current_tok.type != TT_RPAREN:  
+            if self.current_tok.type != TT_RPAREN:
                 args.append(res.register(self.expr()))
                 if res.error: return res
 
@@ -1440,6 +1437,38 @@ class Value:
       'Illegal operation',
       self.context
     )
+class String(Value):
+  def __init__(self, value):
+    super().__init__()
+    self.value = value
+
+  def added_to(self, other):
+    if isinstance(other, String):
+      return String(self.value + other.value).set_context(self.context), None
+    else:
+      return None, Value.illegal_operation(self, other)
+
+  def multed_by(self, other):
+    if isinstance(other, Number):
+      return String(self.value * other.value).set_context(self.context), None
+    else:
+      return None, Value.illegal_operation(self, other)
+
+  def is_true(self):
+    return len(self.value) > 0
+
+  def copy(self):
+    copy = String(self.value)
+    copy.set_pos(self.pos_start, self.pos_end)
+    copy.set_context(self.context)
+    return copy
+
+  def __str__(self):
+    return self.value
+
+  def __repr__(self):
+    return f'"{self.value}"'
+
 
 class Number(Value):
   def __init__(self, value):
@@ -1549,42 +1578,10 @@ class Number(Value):
   def __repr__(self):
     return str(self.value)
 
-Number.null = Number(0)
-Number.false = Number(0)
-Number.true = Number(1)
+Number.null = String("Nada")
+Number.false = String("Casaca")
+Number.true = String("Real")
 Number.math_PI = Number(math.pi)
-
-class String(Value):
-  def __init__(self, value):
-    super().__init__()
-    self.value = value
-
-  def added_to(self, other):
-    if isinstance(other, String):
-      return String(self.value + other.value).set_context(self.context), None
-    else:
-      return None, Value.illegal_operation(self, other)
-
-  def multed_by(self, other):
-    if isinstance(other, Number):
-      return String(self.value * other.value).set_context(self.context), None
-    else:
-      return None, Value.illegal_operation(self, other)
-
-  def is_true(self):
-    return len(self.value) > 0
-
-  def copy(self):
-    copy = String(self.value)
-    copy.set_pos(self.pos_start, self.pos_end)
-    copy.set_context(self.context)
-    return copy
-
-  def __str__(self):
-    return self.value
-
-  def __repr__(self):
-    return f'"{self.value}"'
 
 class List(Value):
   def __init__(self, elements):
@@ -1796,8 +1793,10 @@ class BuiltInFunction(BaseFunction):
   execute_is_list.arg_names = ["value"]
 
   def execute_is_function(self, exec_ctx):
-    is_number = isinstance(exec_ctx.symbol_table.get("value"), BaseFunction)
-    return RTResult().success(Number.true if is_number else Number.false)
+        value = exec_ctx.symbol_table.get("value")
+        if isinstance(value, BaseFunction):
+            return RTResult().success(Number.true)
+        return RTResult().success(Number.false)
   execute_is_function.arg_names = ["value"]
 
   def execute_append(self, exec_ctx):

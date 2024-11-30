@@ -59,8 +59,7 @@ Ejenie("La longitud de lista es: ", Mide(lista))
 
 Ejenie(multiply(5,5))
 
-
-Ejenie(EsFilaIndia(x)) #is_list
-#Ejenie(EsParo(multiply)) #is_fun
-#Ejenie(EsChambre(x)) #Is_str
-#Ejenie(EsEntero(i)) #Is_num
+Ejenie("Es x una fila india? ",EsFilaIndia(x)) #is_list
+Ejenie("Es multiply un paro? ",EsParo(multiply)) #is_fun
+Ejenie("Es x un chambre? ",EsChambre(x)) #is_str
+Ejenie("Es i un entero? ", EsEntero(i)) #is_int
