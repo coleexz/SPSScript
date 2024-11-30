@@ -86,7 +86,7 @@ a * b
 #Len
 Ejenie("La longitud de lista es: ", Mide(lista))
 
-Ejenie(multiply(5,5))
+Ejenie("La multiplicacion de 5*5 es: ", multiply(5,5))
 
 Ejenie("Es x una fila india? ",EsFilaIndia(x)) #is_list
 Ejenie("Es multiply un paro? ",EsParo(multiply)) #is_fun
