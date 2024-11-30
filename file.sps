@@ -1,26 +1,30 @@
 PoneleQue x = [1,2,3]
+Ejenie(x)
 
 # buenos dias, como tamos como tamos
 
-Ejenie(x)
+#Input y print de 'nombre'
+PoneleQue nombre = Sampale()
+Ejenie(nombre)
 
-PoneleQue x = 1
 
-PoneleQue x = 2
 
-PoneteAPensar x NadaQueVer 2 Tonces
-    Ejenie("x no es 2 ")
-Decidite x NadaQueVer 2 Tonces
-    Ejenie("x es 2")
+PoneleQue z = 1
+
+PoneteAPensar z == 2 Tonces
+    Ejenie("z  es 2")
+Decidite z == 3 Tonces
+    Ejenie("z  es 3")
 HaceteLoco
-    Ejenie("x es 2")
+    Ejenie("z no es ni 2 ni 3")
 Cheque
+
 
 
 #FOR
 PoneleQue lista = []
 PasarLista PoneleQue i = 10 Hasta 15 De 2 Tonces
-    APPEND(lista, i)
+    Metele(lista, i)
 Cheque
 
 Ejenie(lista)
@@ -31,7 +35,7 @@ PoneleQue lista = []
 PoneleQue i = 0
 
 AhoritaQue i <= 20 Tonces
-    APPEND(lista, i)
+    Metele(lista, i)
     PoneteAPensar i == 15 Tonces
         CortalaMiPerro
     Cheque
@@ -39,11 +43,25 @@ AhoritaQue i <= 20 Tonces
 
 Cheque
 
+
 Ejenie(lista)
 
+#Pop
+Saca(lista,0)
+Ejenie(lista)
 
+#Funcion
 HacemeElParo multiply(a, b) ->
 a * b
 
+#Len
+#falta corregir que se puedan pasar varias cosas en un print
+#Ejenie("La longitud de lista es: ", Mide(lista))
 
 Ejenie(multiply(5,5))
+
+
+#Ejenie(EsFilaIndia(x)) #is_list
+#Ejenie(EsParo(multiply)) #is_fun
+#Ejenie(EsChambre(x)) #Is_str
+#Ejenie(EsEntero(i)) #Is_num
