@@ -354,8 +354,9 @@ class Lexer:
     return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 
   def skip_comment(self):
-    while self.current_char != '\n' and self.current_char is not None:
+    while self.current_char is not None and self.current_char != '\n':
         self.advance()
+
 
 #######################################
 # NODES
@@ -1437,6 +1438,29 @@ class Value:
       'Illegal operation',
       self.context
     )
+
+class Boolean(Value):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def is_true(self):
+        return self.value
+
+    def copy(self):
+        return Boolean(self.value).set_context(self.context)
+
+    def __str__(self):
+        return "Real" if self.value else "Casaca"
+
+    def __repr__(self):
+        return self.__str__()
+
+Boolean.true = Boolean(True)
+Boolean.false = Boolean(False)
+Boolean.null = Boolean(None)
+
+
 class String(Value):
   def __init__(self, value):
     super().__init__()
@@ -1462,6 +1486,16 @@ class String(Value):
     copy.set_pos(self.pos_start, self.pos_end)
     copy.set_context(self.context)
     return copy
+
+  def get_comparison_eq(self, other):
+    if isinstance(other, String):
+        return Boolean(self.value == other.value).set_context(self.context), None
+    return Boolean.false.set_context(self.context), None
+
+  def get_comparison_ne(self, other):
+    if isinstance(other, String):
+        return Boolean(self.value != other.value).set_context(self.context), None
+    return Boolean.true.set_context(self.context), None
 
   def __str__(self):
     return self.value
@@ -1578,9 +1612,6 @@ class Number(Value):
   def __repr__(self):
     return str(self.value)
 
-Number.null = String("Nada")
-Number.false = String("Casaca")
-Number.true = String("Real")
 Number.math_PI = Number(math.pi)
 
 class List(Value):
@@ -1703,7 +1734,7 @@ class Function(BaseFunction):
     value = res.register(interpreter.visit(self.body_node, exec_ctx))
     if res.should_return() and res.func_return_value == None: return res
 
-    ret_value = (value if self.should_auto_return else None) or res.func_return_value or Number.null
+    ret_value = (value if self.should_auto_return else None) or res.func_return_value or Boolean.null
     return res.success(ret_value)
 
   def copy(self):
@@ -1749,7 +1780,7 @@ class BuiltInFunction(BaseFunction):
 
   def execute_print(self, exec_ctx):
     print(str(exec_ctx.symbol_table.get('value')))
-    return RTResult().success(Number.null)
+    return RTResult().success(Boolean.null)
   execute_print.arg_names = ['value']
 
   def execute_print_ret(self, exec_ctx):
@@ -1769,34 +1800,34 @@ class BuiltInFunction(BaseFunction):
         break
       except ValueError:
         print(f"'{text}' must be an integer. Try again!")
-    return RTResult().success(Number(number))
+    return RTResult().success(Boolean(number))
   execute_input_int.arg_names = []
 
   def execute_clear(self, exec_ctx):
     os.system('cls' if os.name == 'nt' else 'cls')
-    return RTResult().success(Number.null)
+    return RTResult().success(Boolean.null)
   execute_clear.arg_names = []
 
   def execute_is_number(self, exec_ctx):
     is_number = isinstance(exec_ctx.symbol_table.get("value"), Number)
-    return RTResult().success(Number.true if is_number else Number.false)
+    return RTResult().success(Boolean.true if is_number else Boolean.false)
   execute_is_number.arg_names = ["value"]
 
   def execute_is_string(self, exec_ctx):
     is_number = isinstance(exec_ctx.symbol_table.get("value"), String)
-    return RTResult().success(Number.true if is_number else Number.false)
+    return RTResult().success(Boolean.true if is_number else Boolean.false)
   execute_is_string.arg_names = ["value"]
 
   def execute_is_list(self, exec_ctx):
     is_number = isinstance(exec_ctx.symbol_table.get("value"), List)
-    return RTResult().success(Number.true if is_number else Number.false)
+    return RTResult().success(Boolean.true if is_number else Boolean.false)
   execute_is_list.arg_names = ["value"]
 
   def execute_is_function(self, exec_ctx):
         value = exec_ctx.symbol_table.get("value")
         if isinstance(value, BaseFunction):
-            return RTResult().success(Number.true)
-        return RTResult().success(Number.false)
+            return RTResult().success(Boolean.true)
+        return RTResult().success(Boolean.false)
   execute_is_function.arg_names = ["value"]
 
   def execute_append(self, exec_ctx):
@@ -1811,7 +1842,7 @@ class BuiltInFunction(BaseFunction):
       ))
 
     list_.elements.append(value)
-    return RTResult().success(Number.null)
+    return RTResult().success(Boolean.null)
   execute_append.arg_names = ["list", "value"]
 
   def execute_pop(self, exec_ctx):
@@ -1862,7 +1893,7 @@ class BuiltInFunction(BaseFunction):
       ))
 
     listA.elements.extend(listB.elements)
-    return RTResult().success(Number.null)
+    return RTResult().success(Boolean.null)
   execute_extend.arg_names = ["listA", "listB"]
 
   def execute_len(self, exec_ctx):
@@ -1910,7 +1941,7 @@ class BuiltInFunction(BaseFunction):
         exec_ctx
       ))
 
-    return RTResult().success(Number.null)
+    return RTResult().success(Boolean.null)
   execute_run.arg_names = ["fn"]
 
 BuiltInFunction.print       = BuiltInFunction("print")
@@ -2051,9 +2082,9 @@ class Interpreter:
     elif node.op_tok.type == TT_GTE:
       result, error = left.get_comparison_gte(right)
     elif node.op_tok.matches(TT_KEYWORD, 'y'):
-      result, error = left.anded_by(right)
+      result, error = Boolean(left.is_true() and right.is_true()).set_context(context), None
     elif node.op_tok.matches(TT_KEYWORD, 'o'):
-      result, error = left.ored_by(right)
+      result, error = Boolean(left.is_true() or right.is_true()).set_context(context), None
 
     if error:
       return res.failure(error)
@@ -2087,15 +2118,15 @@ class Interpreter:
       if condition_value.is_true():
         expr_value = res.register(self.visit(expr, context))
         if res.should_return(): return res
-        return res.success(Number.null if should_return_null else expr_value)
+        return res.success(Boolean.null if should_return_null else expr_value)
 
     if node.else_case:
       expr, should_return_null = node.else_case
       expr_value = res.register(self.visit(expr, context))
       if res.should_return(): return res
-      return res.success(Number.null if should_return_null else expr_value)
+      return res.success(Boolean.null if should_return_null else expr_value)
 
-    return res.success(Number.null)
+    return res.success(Boolean.null)
 
   def visit_ForNode(self, node, context):
     res = RTResult()
@@ -2136,7 +2167,7 @@ class Interpreter:
       elements.append(value)
 
     return res.success(
-      Number.null if node.should_return_null else
+      Boolean.null if node.should_return_null else
       List(elements).set_context(context).set_pos(node.pos_start, node.pos_end)
     )
 
@@ -2163,7 +2194,7 @@ class Interpreter:
       elements.append(value)
 
     return res.success(
-      Number.null if node.should_return_null else
+      Boolean.null if node.should_return_null else
       List(elements).set_context(context).set_pos(node.pos_start, node.pos_end)
     )
 
@@ -2204,7 +2235,7 @@ class Interpreter:
       value = res.register(self.visit(node.node_to_return, context))
       if res.should_return(): return res
     else:
-      value = Number.null
+      value = Boolean.null
 
     return res.success_return(value)
 
@@ -2227,15 +2258,15 @@ class Interpreter:
         # Print the concatenated string representations of all evaluated values
         print(" ".join(map(str, values)))
 
-        return res.success(Number.null)
+        return res.success(Boolean.null)
 #######################################
 # RUN
 #######################################
 
 global_symbol_table = SymbolTable()
-global_symbol_table.set("NULL", Number.null)
-global_symbol_table.set("FALSE", Number.false)
-global_symbol_table.set("TRUE", Number.true)
+global_symbol_table.set("Nada", Boolean.null)
+global_symbol_table.set("Casaca", Boolean.false)
+global_symbol_table.set("Real", Boolean.true)
 global_symbol_table.set("MATH_PI", Number.math_PI)
 global_symbol_table.set("Ejenie", BuiltInFunction.print)
 global_symbol_table.set("PRINT_RET", BuiltInFunction.print_ret)
