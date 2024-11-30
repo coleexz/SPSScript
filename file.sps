@@ -3,38 +3,6 @@ Ejenie(x)
 
 # buenos dias, como tamos como tamos
 
-#Input y print de 'nombre'
-PoneleQue nombre = Sampale()
-Ejenie("Hola, mi nombre es: ", nombre)
-
-
-
-#Prueba de ifs normales
-PoneteAPensar Mide(x) == 3 y nombre == "Cole" Tonces
-    Ejenie("x mide 3 y nombre es Cole")
-Decidite Mide(x) == 4 o nombre == "William" Tonces
-    Ejenie("x mide 4 o nombre es William")
-HaceteLoco
-    Ejenie("Ninguna de las condiciones se cumplió")
-Cheque
-
-
-#Prueba de ifs anidados
-PoneteAPensar nombre == "Cole" Tonces
-    Ejenie("El nombre es Cole")
-
-    PoneteAPensar Mide(x) == 3 Tonces
-        Ejenie("Además, x mide 3")
-    Decidite Mide(x) > 3 Tonces
-        Ejenie("Además, x mide más de 3")
-    HaceteLoco
-        Ejenie("Además, x mide menos de 3")
-    Cheque
-HaceteLoco
-    Ejenie("El nombre no es Cole")
-Cheque
-
-
 
 
 

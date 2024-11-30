@@ -86,9 +86,6 @@ function App() {
         const fileContent = currentTab?.content || "";
 
         try {
-            // Registro antes de enviar la solicitud
-            console.log("Enviando solicitud al servidor con:", { file_name: fileName, file_content: fileContent });
-
             const response = await fetch("http://127.0.0.1:5000/run", {
                 method: "POST",
                 headers: {
@@ -97,26 +94,19 @@ function App() {
                 body: JSON.stringify({ file_name: fileName, file_content: fileContent }),
             });
 
-            // Registro después de recibir la respuesta
-            console.log("Respuesta del servidor:", response);
+            if (!response.ok) {
+                const errorData = await response.json();
+                setOutputContent(`Error:\n${errorData.error}`);
+                return;
+            }
 
             const data = await response.json();
-            console.log("Datos del servidor:", data);
-
-            if (response.ok) {
-                if (data.output) {
-                    setOutputContent(`Resultado:\n${data.output}`);
-                } else {
-                    setOutputContent("El servidor no devolvió ningún resultado.");
-                }
-            } else {
-                setOutputContent(`Error:\n${data.error}`);
-            }
+            setOutputContent(`Resultado:\n${data.output}`);
         } catch (error) {
-            console.error("Error al conectar con el servidor:", error);
             setOutputContent(`Error de conexión:\n${error.message}`);
         }
     };
+
 
 
 

@@ -1,11 +1,17 @@
 from flask import Flask, request, jsonify
 import subprocess
+import os
+import flask_cors
+
+
 
 app = Flask(__name__)
+flask_cors.CORS(app)
 
 @app.route('/run', methods=['POST'])
 def run_script():
     try:
+        # Leer datos del cliente
         data = request.json
         file_name = data.get('file_name')
         file_content = data.get('file_content')
@@ -16,28 +22,45 @@ def run_script():
         if not file_name.endswith('.sps'):
             return jsonify({"error": "El archivo debe tener la extensión '.sps'"}), 400
 
-        # Escribir el archivo recibido en el servidor
+        # Escribir el archivo temporalmente
         with open(file_name, "w") as temp_file:
             temp_file.write(file_content)
+        print(f"Archivo {file_name} escrito con contenido:\n{file_content}")
 
         # Ejecutar el comando
         command = ["python3", "shell.py", file_name]
-        result = subprocess.run(command, text=True, capture_output=True)
+        print(f"Ejecutando comando: {' '.join(command)}")
 
-        # Depuración en el servidor
-        print(f"Comando ejecutado: {' '.join(command)}")
-        print(f"STDOUT:\n{result.stdout}")
-        print(f"STDERR:\n{result.stderr}")
-        print(f"Return Code: {result.returncode}")
+        result = subprocess.run(
+            command,
+            text=True,
+            capture_output=True,
+            input="",  # Para evitar que espere entrada
+            timeout=10  # Establecer un tiempo máximo de espera
+        )
 
-        # Verificar el resultado de la ejecución
-        if result.returncode == 0:
-            return jsonify({"output": result.stdout.strip()}), 200
+        # Capturar salida
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+        return_code = result.returncode
+
+        print(f"STDOUT:\n{stdout}")
+        print(f"STDERR:\n{stderr}")
+        print(f"Return Code: {return_code}")
+
+        if return_code == 0:
+            return jsonify({"output": stdout}), 200
         else:
-            return jsonify({"error": result.stderr.strip()}), 500
+            return jsonify({"error": stderr}), 500
+
+    except subprocess.TimeoutExpired:
+        print("Error: El proceso tomó demasiado tiempo y fue detenido.")
+        return jsonify({"error": "El proceso tomó demasiado tiempo y fue detenido."}), 500
 
     except Exception as e:
+        print(f"Error inesperado: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
