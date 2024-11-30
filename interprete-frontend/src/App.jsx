@@ -1,210 +1,375 @@
 import React, { useState } from "react";
 import {
-  Box,
-  Button,
-  Container,
-  Typography,
-  TextField,
-  Alert,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
+    Box,
+    Button,
+    Typography,
+    TextField,
+    Tabs,
+    Tab,
+    IconButton,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
 function App() {
-  const [fileContent, setFileContent] = useState(""); // Contenido del archivo o texto escrito
-  const [outputContent, setOutputContent] = useState(""); // Contenido del output
-  const [fileName, setFileName] = useState(""); // Nombre del archivo seleccionado
-  const [error, setError] = useState(null); // Manejo de errores
-  const [showDialog, setShowDialog] = useState(false); // Muestra el cuadro de confirmación para reemplazo
-  const [pendingFile, setPendingFile] = useState(null); // Archivo pendiente de cargar
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false); // Controla el diálogo para nombrar archivo
-  const [customFileName, setCustomFileName] = useState(""); // Nombre personalizado para guardar el archivo
+    const [tabs, setTabs] = useState([{ id: 0, name: "Nuevo archivo", content: "" }]);
+    const [activeTab, setActiveTab] = useState(0);
+    const [outputContent, setOutputContent] = useState("");
+    const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+    const [customFileName, setCustomFileName] = useState("");
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-
-    if (file) {
-      if (!file.name.endsWith(".sps")) {
-        setError("Por favor selecciona un archivo con extensión .sps");
-        return;
-      }
-
-      if (fileContent.trim() !== "") {
-        // Si hay contenido en el cuadro, pregunta antes de reemplazarlo
-        setPendingFile(file);
-        setShowDialog(true);
-      } else {
-        readFile(file);
-      }
-    }
-  };
-
-  const readFile = (file) => {
-    setFileName(file.name); // Guarda el nombre del archivo
-    setError(null); // Limpia errores anteriores
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFileContent(e.target.result); // Carga el contenido del archivo
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
     };
-    reader.readAsText(file); // Lee el archivo como texto
-  };
 
-  const handleSave = () => {
-    setCustomFileName(fileName || "nuevo-archivo.sps"); // Usa el nombre actual o un predeterminado
-    setSaveDialogOpen(true); // Abre el cuadro de diálogo para nombrar el archivo
-  };
+    const handleContentChange = (newContent) => {
+        const updatedTabs = [...tabs];
+        updatedTabs[activeTab].content = newContent;
+        setTabs(updatedTabs);
+    };
 
-  const saveFile = () => {
-    const blob = new Blob([fileContent], { type: "text/plain" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = customFileName.endsWith(".sps")
-      ? customFileName
-      : `${customFileName}.sps`; // Asegura la extensión
-    link.click();
-    setSaveDialogOpen(false); // Cierra el diálogo
-  };
+    const handleAddTab = () => {
+        const newTab = { id: tabs.length, name: `Nuevo archivo ${tabs.length + 1}`, content: "" };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTab(tabs.length);
+    };
 
-  const handleDialogClose = (saveBeforeReplace) => {
-    setShowDialog(false);
-    if (saveBeforeReplace) {
-      handleSave(); // Guarda antes de reemplazar
-    }
-    if (pendingFile) {
-      readFile(pendingFile); // Reemplaza el contenido con el nuevo archivo
-      setPendingFile(null);
-    }
-  };
+    const handleCloseTab = (index) => {
+        const updatedTabs = tabs.filter((_, i) => i !== index);
+        setTabs(updatedTabs);
 
-  return (
-    <Container maxWidth={false} sx={{ bgcolor: "#00bce4", padding: 2 }}>
-      <Typography variant="h1" gutterBottom sx={{ color: "white" }}>
-        San Pedro Script Interpreter
-      </Typography>
+        if (activeTab === index && updatedTabs.length > 0) {
+            setActiveTab(Math.max(index - 1, 0));
+        } else if (activeTab > index) {
+            setActiveTab(activeTab - 1);
+        }
+    };
 
-      <Box mb={5}>
-        <Button
-          variant="contained"
-          component="label"
-          sx={{ marginRight: 2, bgcolor: "white", color: "black" }}
+    const handleSave = () => {
+        setCustomFileName(tabs[activeTab]?.name || "nuevo-archivo.sps");
+        setSaveDialogOpen(true);
+    };
+
+    const saveFile = () => {
+        const blob = new Blob([tabs[activeTab].content], { type: "text/plain" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = customFileName.endsWith(".sps")
+            ? customFileName
+            : `${customFileName}.sps`;
+        link.click();
+        setSaveDialogOpen(false);
+    };
+
+    const handleOpenFile = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                const newTab = { id: tabs.length, name: file.name, content };
+                setTabs((prevTabs) => [...prevTabs, newTab]);
+                setActiveTab(tabs.length);
+            };
+            reader.readAsText(file);
+        }
+    };
+
+    const handleRun = async () => {
+        const currentTab = tabs[activeTab];
+        const fileName = currentTab?.name || "archivo.sps";
+        const fileContent = currentTab?.content || "";
+
+        try {
+            // Registro antes de enviar la solicitud
+            console.log("Enviando solicitud al servidor con:", { file_name: fileName, file_content: fileContent });
+
+            const response = await fetch("http://127.0.0.1:5000/run", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ file_name: fileName, file_content: fileContent }),
+            });
+
+            // Registro después de recibir la respuesta
+            console.log("Respuesta del servidor:", response);
+
+            const data = await response.json();
+            console.log("Datos del servidor:", data);
+
+            if (response.ok) {
+                if (data.output) {
+                    setOutputContent(`Resultado:\n${data.output}`);
+                } else {
+                    setOutputContent("El servidor no devolvió ningún resultado.");
+                }
+            } else {
+                setOutputContent(`Error:\n${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error al conectar con el servidor:", error);
+            setOutputContent(`Error de conexión:\n${error.message}`);
+        }
+    };
+
+
+
+    return (
+        <Box
+            sx={{
+                bgcolor: "#1E1E1E",
+                color: "white",
+                height: "100vh",
+                display: "flex",
+                flexDirection: "column",
+                p: 2,
+                overflow: "hidden", // Asegura que no haya scroll en toda la página
+                width: "98vw", // Fija el ancho de la página
+                maxWidth: "98vw", // Fija el ancho máximo de la página
+            }}
         >
-          Seleccionar archivo
-          <input
-            type="file"
-            accept=".sps"
-            hidden
-            onChange={handleFileUpload}
-          />
-        </Button>
+            {/* Título */}
+            <Typography variant="h4" sx={{ fontFamily: "monospace", mb: 3 }}>
+                San Pedro Script Interpreter
+            </Typography>
 
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          sx={{ bgcolor: "white", color: "black" }}
-        >
-          Guardar archivo
-        </Button>
+            {/* Botones principales */}
+            <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+                <Button
+                    variant="contained"
+                    sx={{ bgcolor: "#007ACC", textTransform: "none" }}
+                    onClick={handleAddTab}
+                >
+                    Nuevo archivo
+                </Button>
+                <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    sx={{ bgcolor: "#007ACC", textTransform: "none" }}
+                >
+                    Guardar archivo
+                </Button>
+                <Button
+                    variant="contained"
+                    component="label"
+                    sx={{ bgcolor: "#007ACC", textTransform: "none" }}
+                >
+                    Abrir archivo
+                    <input
+                        type="file"
+                        hidden
+                        onChange={handleOpenFile}
+                    />
+                </Button>
+                <IconButton
+                    sx={{ bgcolor: "#007ACC", color: "white" }}
+                    onClick={handleRun}
+                >
+                    <PlayArrowIcon />
+                </IconButton>
+            </Box>
 
-        {fileName && (
-          <Typography variant="body1" sx={{ color: "white", marginTop: 2 }}>
-            <strong>Archivo seleccionado:</strong> {fileName}
-          </Typography>
-        )}
-      </Box>
+            {/* Contenedor de Tabs y Editor */}
+            <Box
+                sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                    overflow: "hidden",
+                }}
+            >
+                {/* Tabs */}
+                <Box
+                    sx={{
+                        overflowX: "auto", // Scroll horizontal limitado a los tabs
+                        whiteSpace: "nowrap", // Evita que las pestañas se rompan en varias líneas
+                        borderBottom: "1px solid #444",
+                    }}
+                >
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        variant="scrollable"
+                        scrollButtons="auto"
+                        TabIndicatorProps={{ style: { backgroundColor: "#007ACC" } }}
+                    >
+                        {tabs.map((tab, index) => (
+                            <Tab
+                                key={tab.id}
+                                label={
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        {tab.name}
+                                        {tabs.length > 1 && (
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleCloseTab(index);
+                                                }}
+                                            >
+                                                <CloseIcon fontSize="small" sx={{ color: "white" }} />
+                                            </IconButton>
+                                        )}
+                                    </Box>
+                                }
+                            />
+                        ))}
+                    </Tabs>
+                </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ marginBottom: 2 }}>
-          {error}
-        </Alert>
-      )}
+                {/* Editor de código */}
+                <Box
+                    sx={{
+                        flex: 2,
+                        display: "flex",
+                        flexDirection: "column",
+                        bgcolor: "#252526",
+                        borderRadius: 1,
+                        p: 2,
+                        overflow: "hidden",
+                        border: "1px solid #444",
+                    }}
+                >
+                    <Typography variant="h6" sx={{ fontFamily: "monospace", mb: 1 }}>
+                        Editor de código
+                    </Typography>
+                    <TextField
+                        multiline
+                        fullWidth
+                        rows={8.5}
+                        value={tabs[activeTab]?.content || ""}
+                        onChange={(e) => handleContentChange(e.target.value)}
+                        variant="outlined"
+                        placeholder="Escribe el código aquí..."
+                        sx={{
+                            bgcolor: "#1E1E1E",
+                            color: "white",
+                            borderRadius: 1,
+                            flex: 1,
+                            "& .MuiInputBase-root": {
+                                color: "white",
+                                fontFamily: "monospace",
+                            },
+                        }}
+                    />
+                </Box>
+            </Box>
 
-      {/* TextField para escribir el código */}
-      <Typography variant="h6" sx={{ color: "white", marginBottom: 2 }}>
-        Editor de código
-      </Typography>
-      <TextField
-        multiline
-        rows={15}
-        fullWidth
-        value={fileContent}
-        onChange={(e) => setFileContent(e.target.value)} // Permite editar el contenido
-        variant="outlined"
-        placeholder="Aquí se escribe el código de SPScript"
-        sx={{ bgcolor: "white", marginBottom: 3 }}
-      />
+            {/* Salida e Input */}
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: 2,
+                    mt: 2,
+                }}
+            >
+                {/* Salida */}
+                <Box
+                    sx={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        bgcolor: "#252526",
+                        borderRadius: 1,
+                        p: 2,
+                        overflow: "hidden",
+                        width: "70%",
+                    }}
+                >
+                    <Typography variant="h6" sx={{ fontFamily: "monospace", mb: 1 }}>
+                        Salida
+                    </Typography>
+                    <TextField
+                        multiline
+                        fullWidth
+                        rows={10}
+                        value={outputContent}
+                        variant="outlined"
+                        placeholder="La salida aparecerá aquí..."
+                        InputProps={{ readOnly: true }}
+                        sx={{
+                            bgcolor: "#1E1E1E",
+                            color: "white",
+                            borderRadius: 1,
+                            flex: 1,
+                            "& .MuiInputBase-root": {
+                                color: "white",
+                                fontFamily: "monospace",
+                            },
+                        }}
+                    />
+                </Box>
 
-      {/* TextField para el output */}
-      <Typography variant="h6" sx={{ color: "white", marginBottom: 2 }}>
-        Output
-      </Typography>
-      <TextField
-        multiline
-        rows={10}
-        fullWidth
-        value={outputContent}
-        variant="outlined"
-        placeholder="El output aparecerá aquí..."
-        sx={{ bgcolor: "white" }}
-        InputProps={{
-          readOnly: true, // Campo de solo lectura
-        }}
-      />
+                {/* Input */}
+                <Box
+                    sx={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        bgcolor: "#252526",
+                        borderRadius: 1,
+                        p: 2,
+                        overflow: "hidden",
+                        width: "30%",
+                    }}
+                >
+                    <Typography variant="h6" sx={{ fontFamily: "monospace", mb: 1 }}>
+                        Input
+                    </Typography>
+                    <TextField
+                        multiline
+                        fullWidth
+                        rows={10}
+                        variant="outlined"
+                        placeholder="Escribe el input aquí..."
+                        sx={{
+                            bgcolor: "#1E1E1E",
+                            color: "white",
+                            borderRadius: 1,
+                            flex: 1,
+                            "& .MuiInputBase-root": {
+                                color: "white",
+                                fontFamily: "monospace",
+                            },
+                        }}
+                    />
+                </Box>
+            </Box>
 
-      {/* Diálogo de confirmación para reemplazo */}
-      <Dialog
-        open={showDialog}
-        onClose={() => handleDialogClose(false)}
-      >
-        <DialogTitle>Guardar cambios</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Tienes contenido escrito que será reemplazado si cargas un nuevo archivo.
-            ¿Deseas guardarlo antes de continuar?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => handleDialogClose(false)} color="primary">
-            No guardar
-          </Button>
-          <Button onClick={() => handleDialogClose(true)} color="primary" autoFocus>
-            Guardar y reemplazar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Diálogo para nombrar el archivo */}
-      <Dialog
-        open={saveDialogOpen}
-        onClose={() => setSaveDialogOpen(false)}
-      >
-        <DialogTitle>Guardar archivo</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Escribe el nombre que deseas para el archivo.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Nombre del archivo"
-            fullWidth
-            value={customFileName}
-            onChange={(e) => setCustomFileName(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSaveDialogOpen(false)} color="primary">
-            Cancelar
-          </Button>
-          <Button onClick={saveFile} color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
-  );
+            {/* Diálogo para guardar archivo */}
+            <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
+                <DialogTitle>Guardar archivo</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Escribe el nombre que deseas para el archivo.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Nombre del archivo"
+                        fullWidth
+                        value={customFileName}
+                        onChange={(e) => setCustomFileName(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSaveDialogOpen(false)} color="primary">
+                        Cancelar
+                    </Button>
+                    <Button onClick={saveFile} color="primary">
+                        Guardar
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
 }
 
 export default App;
