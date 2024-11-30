@@ -1,52 +1,45 @@
-VAR x = [1,2,3]
+PoneleQue x = [1,2,3]
 
-#buenos dias, como tamos como tamos
+# buenos dias, como tamos como tamos
 
-PRINT(x)
+Ejenie(x)
 
-APPEND(x, 4)
-PRINT(x)
+PoneleQue x = 1
 
+PoneleQue x = 2
 
-VAR name = INPUT()
-PRINT(name)
-
-PRINT(LEN(x))
-
-IF 5==5 THEN;
-    PRINT("HELLO")
-ELSE
-    PRINT("ADIOS")
-END;
-
-FUN add (a,b) -> a + b
-PRINT(add(5,5))
-
-PRINT(IS_FUN(add))
-PRINT(IS_FUN(name))
-PRINT(IS_LIST(name))
-PRINT(IS_LIST(x))
-
-VAR arr = []
-
-FOR VAR i = 0 TO 10  STEP 2 THEN;
-    PRINT(i)
-    APPEND(arr, i)
-    IF i < 5 THEN;
-        CONTINUE
-    ELSE
-        PRINT("TERMINO EL FOR")
-        BREAK
-    END;
+PoneteAPensar x NadaQueVer 2 THEN
+    Ejenie("x no es 2 ")
+Decidite x NadaQueVer 2 THEN
+    Ejenie("x es 2")
+HaceteLoco
+    Ejenie("x es 2")
 END
 
-PRINT(arr)
+
+#FOR
+PoneleQue lista = []
+PasarLista PoneleQue i = 10 Hasta 15 De 2 THEN
+    APPEND(lista, i)
+END
+
+Ejenie(lista)
 
 
-VAR prueba = add(1,1)
-PRINT(prueba)
+#WHILE
+PoneleQue lista = []
+PoneleQue i = 0
+
+AhoritaQue i <= 20 THEN
+    APPEND(lista, i)
+    i = i + 5
+END
+
+Ejenie(lista)
 
 
+HacemeElParo multiply(a, b) ->
+a * b
 
-FUN greet(name) -> PRINT("Hello " + name)
-greet("William")
+
+Ejenie(multiply(5,5))
