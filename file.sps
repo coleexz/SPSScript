@@ -5,7 +5,7 @@ Ejenie(x)
 
 #Input y print de 'nombre'
 PoneleQue nombre = Sampale()
-Ejenie(nombre)
+Ejenie("Hola, mi nombre es: ", nombre)
 
 
 
@@ -55,13 +55,12 @@ HacemeElParo multiply(a, b) ->
 a * b
 
 #Len
-#falta corregir que se puedan pasar varias cosas en un print
-#Ejenie("La longitud de lista es: ", Mide(lista))
+Ejenie("La longitud de lista es: ", Mide(lista))
 
 Ejenie(multiply(5,5))
 
 
-#Ejenie(EsFilaIndia(x)) #is_list
+Ejenie(EsFilaIndia(x)) #is_list
 #Ejenie(EsParo(multiply)) #is_fun
 #Ejenie(EsChambre(x)) #Is_str
 #Ejenie(EsEntero(i)) #Is_num

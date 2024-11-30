@@ -636,6 +636,36 @@ class Parser:
       self.advance()
       return res.success(BreakNode(pos_start, self.current_tok.pos_start.copy()))
 
+    if self.current_tok.matches(TT_IDENTIFIER, 'Ejenie'):
+        res.register_advancement()
+        self.advance()
+
+        if self.current_tok.type == TT_LPAREN:
+            res.register_advancement()
+            self.advance()
+            args = []
+
+            if self.current_tok.type != TT_RPAREN:  
+                args.append(res.register(self.expr()))
+                if res.error: return res
+
+                while self.current_tok.type == TT_COMMA:
+                    res.register_advancement()
+                    self.advance()
+                    args.append(res.register(self.expr()))
+                    if res.error: return res
+
+                if self.current_tok.type != TT_RPAREN:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Expected ',' or ')'"
+                    ))
+
+            res.register_advancement()
+            self.advance()
+            return res.success(PrintNode(args, pos_start, self.current_tok.pos_end.copy()))
+
+
     expr = res.register(self.expr())
     if res.error:
       return res.failure(InvalidSyntaxError(
@@ -753,38 +783,35 @@ class Parser:
     atom = res.register(self.atom())
     if res.error: return res
 
-    if self.current_tok.type == TT_LPAREN:
-      res.register_advancement()
-      self.advance()
-      arg_nodes = []
-
-      if self.current_tok.type == TT_RPAREN:
+    if self.current_tok.type == TT_LPAREN:  # Function call detected
         res.register_advancement()
         self.advance()
-      else:
-        arg_nodes.append(res.register(self.expr()))
-        if res.error:
-          return res.failure(InvalidSyntaxError(
-            self.current_tok.pos_start, self.current_tok.pos_end,
-            "Se esperaba un ')', 'PoneleQue', 'PoneteAPensar', 'PasarLista', 'AhoritaQue', 'HacemeElParo', int, float, identifier, '+', '-', '(', '[' or 'NadaQueVer'"
-          ))
+        arg_nodes = []
 
-        while self.current_tok.type == TT_COMMA:
-          res.register_advancement()
-          self.advance()
+        if self.current_tok.type != TT_RPAREN:  # If arguments are present
+            arg_nodes.append(res.register(self.expr()))
+            if res.error:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected ')', expression, or ','"
+                ))
 
-          arg_nodes.append(res.register(self.expr()))
-          if res.error: return res
+            while self.current_tok.type == TT_COMMA:
+                res.register_advancement()
+                self.advance()
+                arg_nodes.append(res.register(self.expr()))
+                if res.error: return res
 
-        if self.current_tok.type != TT_RPAREN:
-          return res.failure(InvalidSyntaxError(
-            self.current_tok.pos_start, self.current_tok.pos_end,
-            f"Expected ',' or ')'"
-          ))
+            if self.current_tok.type != TT_RPAREN:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected ',' or ')'"
+                ))
 
         res.register_advancement()
         self.advance()
-      return res.success(CallNode(atom, arg_nodes))
+        return res.success(CallNode(atom, arg_nodes))  # Return a CallNode with arguments
+
     return res.success(atom)
 
   def atom(self):
@@ -1199,7 +1226,6 @@ class Parser:
     res.register_advancement()
     self.advance()
 
-    # Handle arrow-based function syntax
     if self.current_tok.type == TT_ARROW:
         res.register_advancement()
         self.advance()
@@ -1219,7 +1245,6 @@ class Parser:
             True  # Auto-return for arrow functions
         ))
 
-    # Handle block-based functions
     if self.current_tok.type != TT_NEWLINE:
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
@@ -1328,6 +1353,16 @@ class RTResult:
       self.loop_should_continue or
       self.loop_should_break
     )
+
+#######################################
+# PRINT NODE
+#######################################
+
+class PrintNode:
+    def __init__(self, exprs, pos_start, pos_end):
+        self.exprs = exprs
+        self.pos_start = pos_start
+        self.pos_end = pos_end
 
 #######################################
 # VALUES
@@ -2180,6 +2215,20 @@ class Interpreter:
   def visit_BreakNode(self, node, context):
     return RTResult().success_break()
 
+  def visit_PrintNode(self, node, context):
+        res = RTResult()
+
+        # Evaluate all expressions in the PrintNode
+        values = []
+        for expr in node.exprs:
+            value = res.register(self.visit(expr, context))
+            if res.should_return(): return res
+            values.append(value)
+
+        # Print the concatenated string representations of all evaluated values
+        print(" ".join(map(str, values)))
+
+        return res.success(Number.null)
 #######################################
 # RUN
 #######################################
