@@ -124,23 +124,23 @@ TT_NEWLINE		= 'NEWLINE'
 TT_EOF				= 'EOF'
 
 KEYWORDS = [
-  'PoneleQue',
-  'y',
-  'o',
-  'NadaQueVer',
-  'PoneteAPensar',
-  'Decidite',
-  'HaceteLoco',
-  'PasarLista',
-  'Hasta',
-  'De',
-  'AhoritaQue',
-  'HacemeElParo',
-  'THEN',
-  'END',
-  'RETURN',
-  'CONTINUE',
-  'BREAK',
+  'PoneleQue', #VAR
+  'y', #AND
+  'o', #OR
+  'NadaQueVer', #NOT
+  'PoneteAPensar', #IF
+  'Decidite', #ELIF
+  'HaceteLoco', #ELSE
+  'PasarLista', #FOR
+  'Hasta', #TO
+  'De', #STEP
+  'AhoritaQue', #WHILE
+  'HacemeElParo', #FUNC
+  'Tonces', #THEN
+  'Cheque', #END
+  'RETURN', #RETURN
+  'SigaMiPerro', #CONTINUE
+  'CortalaMiPerro', #BREAK
 ]
 
 class Token:
@@ -626,12 +626,12 @@ class Parser:
         self.reverse(res.to_reverse_count)
       return res.success(ReturnNode(expr, pos_start, self.current_tok.pos_start.copy()))
 
-    if self.current_tok.matches(TT_KEYWORD, 'CONTINUE'):
+    if self.current_tok.matches(TT_KEYWORD, 'SigaMiPerro'):
       res.register_advancement()
       self.advance()
       return res.success(ContinueNode(pos_start, self.current_tok.pos_start.copy()))
 
-    if self.current_tok.matches(TT_KEYWORD, 'BREAK'):
+    if self.current_tok.matches(TT_KEYWORD, 'CortalaMiPerro'):
       res.register_advancement()
       self.advance()
       return res.success(BreakNode(pos_start, self.current_tok.pos_start.copy()))
@@ -640,7 +640,7 @@ class Parser:
     if res.error:
       return res.failure(InvalidSyntaxError(
         self.current_tok.pos_start, self.current_tok.pos_end,
-        "Se esperaba un 'RETURN', 'CONTINUE', 'BREAK', 'PoneleQue', 'PoneteAPensar', 'PasarLista', 'AhoritaQue', 'HacemeElParo', int, float, identifier, '+', '-', '(', '[' or 'NadaQueVer'"
+        "Se esperaba un 'RETURN', 'SigaMiPerro', 'CortalaMiPerro', 'PoneleQue', 'PoneteAPensar', 'PasarLista', 'AhoritaQue', 'HacemeElParo', int, float, identifier, '+', '-', '(', '[' or 'NadaQueVer'"
       ))
     return res.success(expr)
 
@@ -924,13 +924,13 @@ class Parser:
         if res.error: return res
         else_case = (statements, True)
 
-        if self.current_tok.matches(TT_KEYWORD, 'END'):
+        if self.current_tok.matches(TT_KEYWORD, 'Cheque'):
           res.register_advancement()
           self.advance()
         else:
           return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
-            "Expected 'END'"
+            "Se esperaba un 'Cheque'"
           ))
       else:
         expr = res.register(self.statement())
@@ -970,10 +970,10 @@ class Parser:
     condition = res.register(self.expr())
     if res.error: return res
 
-    if not self.current_tok.matches(TT_KEYWORD, 'THEN'):
+    if not self.current_tok.matches(TT_KEYWORD, 'Tonces'):
       return res.failure(InvalidSyntaxError(
         self.current_tok.pos_start, self.current_tok.pos_end,
-        f"Expected 'THEN'"
+        f"Se esperaba un 'Tonces'"
       ))
 
     res.register_advancement()
@@ -987,7 +987,7 @@ class Parser:
       if res.error: return res
       cases.append((condition, statements, True))
 
-      if self.current_tok.matches(TT_KEYWORD, 'END'):
+      if self.current_tok.matches(TT_KEYWORD, 'Cheque'):
         res.register_advancement()
         self.advance()
       else:
@@ -1065,10 +1065,10 @@ class Parser:
     else:
         step_value = None
 
-    if not self.current_tok.matches(TT_KEYWORD, 'THEN'):
+    if not self.current_tok.matches(TT_KEYWORD, 'Tonces'):
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
-            "Expected 'THEN'"
+            "Se esperaba un 'Tonces'"
         ))
     res.register_advancement()
     self.advance()
@@ -1080,10 +1080,10 @@ class Parser:
         body = res.register(self.statements())
         if res.error: return res
 
-        if not self.current_tok.matches(TT_KEYWORD, 'END'):
+        if not self.current_tok.matches(TT_KEYWORD, 'Cheque'):
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Se esperaba un 'END' para terminar de 'PasarLista'"
+                "Se esperaba un 'Cheque' para terminar de 'PasarLista'"
             ))
         res.register_advancement()
         self.advance()
@@ -1110,10 +1110,10 @@ class Parser:
     condition = res.register(self.expr())
     if res.error: return res
 
-    if not self.current_tok.matches(TT_KEYWORD, 'THEN'):
+    if not self.current_tok.matches(TT_KEYWORD, 'Tonces'):
       return res.failure(InvalidSyntaxError(
         self.current_tok.pos_start, self.current_tok.pos_end,
-        f"Expected 'THEN'"
+        f"Se esperaba un 'Tonces'"
       ))
 
     res.register_advancement()
@@ -1126,10 +1126,10 @@ class Parser:
       body = res.register(self.statements())
       if res.error: return res
 
-      if not self.current_tok.matches(TT_KEYWORD, 'END'):
+      if not self.current_tok.matches(TT_KEYWORD, 'Cheque'):
         return res.failure(InvalidSyntaxError(
           self.current_tok.pos_start, self.current_tok.pos_end,
-          f"Expected 'END'"
+          f"Se esperaba un 'Cheque'"
         ))
 
       res.register_advancement()
@@ -1232,10 +1232,10 @@ class Parser:
     body = res.register(self.statements())
     if res.error: return res
 
-    if not self.current_tok.matches(TT_KEYWORD, 'END'):
+    if not self.current_tok.matches(TT_KEYWORD, 'Cheque'):
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
-            "Expected 'END'"
+            "Se esperaba un 'Cheque'"
         ))
 
     res.register_advancement()

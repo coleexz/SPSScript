@@ -8,20 +8,20 @@ PoneleQue x = 1
 
 PoneleQue x = 2
 
-PoneteAPensar x NadaQueVer 2 THEN
+PoneteAPensar x NadaQueVer 2 Tonces
     Ejenie("x no es 2 ")
-Decidite x NadaQueVer 2 THEN
+Decidite x NadaQueVer 2 Tonces
     Ejenie("x es 2")
 HaceteLoco
     Ejenie("x es 2")
-END
+Cheque
 
 
 #FOR
 PoneleQue lista = []
-PasarLista PoneleQue i = 10 Hasta 15 De 2 THEN
+PasarLista PoneleQue i = 10 Hasta 15 De 2 Tonces
     APPEND(lista, i)
-END
+Cheque
 
 Ejenie(lista)
 
@@ -30,10 +30,14 @@ Ejenie(lista)
 PoneleQue lista = []
 PoneleQue i = 0
 
-AhoritaQue i <= 20 THEN
+AhoritaQue i <= 20 Tonces
     APPEND(lista, i)
+    PoneteAPensar i == 15 Tonces
+        CortalaMiPerro
+    Cheque
     i = i + 5
-END
+
+Cheque
 
 Ejenie(lista)
 
