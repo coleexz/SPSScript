@@ -1,5 +1,5 @@
 import sys
-import Basic
+import Run as Basic
 
 def run_interactive_mode():
     """Modo interactivo de tu lenguaje."""
