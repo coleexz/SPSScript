@@ -123,6 +123,11 @@ TT_COMMA			= 'COMMA'
 TT_ARROW			= 'ARROW'
 TT_NEWLINE		= 'NEWLINE'
 TT_EOF				= 'EOF'
+TT_LBRACE     = 'LBRACE'  # {
+TT_RBRACE     = 'RBRACE'  # }
+TT_DOT        = 'DOT'  # .
+
+
 
 KEYWORDS = [
   'PoneleQue', #VAR
@@ -142,6 +147,10 @@ KEYWORDS = [
   'RETURN', #RETURN
   'SigaMiPerro', #CONTINUE
   'CortalaMiPerro', #BREAK
+  'Clase',   # Para definir una clase
+  'Nuevo',   # Para instanciar un objeto
+  'Propio',  # Representa 'self'
+
 ]
 
 class Token:
@@ -235,6 +244,15 @@ class Lexer:
         tokens.append(self.make_greater_than())
       elif self.current_char == ',':
         tokens.append(Token(TT_COMMA, pos_start=self.pos))
+        self.advance()
+      elif self.current_char == '.':
+        tokens.append(Token(TT_DOT, pos_start=self.pos))
+        self.advance()
+      elif self.current_char == '{':
+        tokens.append(Token(TT_LBRACE, pos_start=self.pos))
+        self.advance()
+      elif self.current_char == '}':
+        tokens.append(Token(TT_RBRACE, pos_start=self.pos))
         self.advance()
       else:
         pos_start = self.pos.copy()
@@ -501,6 +519,35 @@ class BreakNode:
     self.pos_start = pos_start
     self.pos_end = pos_end
 
+class ClassDefNode:
+    def __init__(self, class_name_tok, body_node):
+        self.class_name_tok = class_name_tok
+        self.body_node = body_node
+        self.pos_start = class_name_tok.pos_start
+        self.pos_end = body_node.pos_end
+
+class ClassInstantiationNode:
+    def __init__(self, class_name_tok):
+        self.class_name_tok = class_name_tok
+        self.pos_start = class_name_tok.pos_start
+        self.pos_end = class_name_tok.pos_end
+
+class ObjectNode:
+    def __init__(self, class_name, attributes, pos_start, pos_end):
+        self.class_name = class_name
+        self.attributes = attributes
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+
+class MethodCallNode:
+    def __init__(self, object_name_tok, method_name_tok, args):
+        self.object_name_tok = object_name_tok
+        self.method_name_tok = method_name_tok
+        self.args = args
+
+        self.pos_start = object_name_tok.pos_start
+        self.pos_end = args[-1].pos_end if args else method_name_tok.pos_end
+
 #######################################
 # PARSE RESULT
 #######################################
@@ -675,6 +722,7 @@ class Parser:
   def expr(self):
     res = ParseResult()
 
+    # Manejar 'PoneleQue'
     if self.current_tok.matches(TT_KEYWORD, 'PoneleQue'):
         res.register_advancement()
         self.advance()
@@ -682,45 +730,73 @@ class Parser:
         if self.current_tok.type != TT_IDENTIFIER:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected identifier"
+                "Se esperaba un identificador después de 'PoneleQue'"
             ))
 
         var_name = self.current_tok
         res.register_advancement()
         self.advance()
 
-        if self.current_tok.type != TT_EQ:
-            return res.failure(InvalidSyntaxError(
-                self.current_tok.pos_start, self.current_tok.pos_end,
-                "Expected '='"
-            ))
-
-        res.register_advancement()
-        self.advance()
-        expr = res.register(self.expr())
-        if res.error: return res
-        return res.success(VarAssignNode(var_name, expr))
-
-    if self.current_tok.type == TT_IDENTIFIER:
-        var_name = self.current_tok
-        res.register_advancement()
-        self.advance()
-
+        # Verificar si es '=' para una asignación
         if self.current_tok.type == TT_EQ:
             res.register_advancement()
             self.advance()
+
+            # Verificar si es una instancia de clase con 'Nuevo'
+            if self.current_tok.matches(TT_KEYWORD, 'Nuevo'):
+                res.register_advancement()
+                self.advance()
+
+                # Verificar el nombre de la clase
+                if self.current_tok.type != TT_IDENTIFIER:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Se esperaba un identificador para el nombre de la clase"
+                    ))
+
+                class_name = self.current_tok
+                res.register_advancement()
+                self.advance()
+
+                # Verificar paréntesis vacíos '()'
+                if self.current_tok.type != TT_LPAREN:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Se esperaba '(' después del nombre de la clase"
+                    ))
+
+                res.register_advancement()
+                self.advance()
+
+                if self.current_tok.type != TT_RPAREN:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Se esperaba ')' después de '('"
+                    ))
+
+                res.register_advancement()
+                self.advance()
+
+                # Crear nodo para la instanciación de clase
+                return res.success(VarAssignNode(var_name, ClassInstantiationNode(class_name)))
+
+            # Si no es 'Nuevo', manejar como una asignación normal
             expr = res.register(self.expr())
             if res.error: return res
             return res.success(VarAssignNode(var_name, expr))
-        else:
-            self.reverse()
 
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            "Se esperaba '=' después del identificador"
+        ))
+
+    # Manejo de otras expresiones
     node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'y'), (TT_KEYWORD, 'o'))))
 
     if res.error:
         return res.failure(InvalidSyntaxError(
             self.current_tok.pos_start, self.current_tok.pos_end,
-            "Se esperaba un 'PoneleQue', 'PoneteAPensar', 'PasarLista', 'AhoritaQue', 'HacemeElParo', int, float, identifier, '+', '-', '(', '[' or 'NadaQueVer'"
+            "Se esperaba un 'PoneleQue', 'PoneteAPensar', 'PasarLista', 'AhoritaQue', 'HacemeElParo', int, float, identifier, '+', '-', '(', '[' o 'NadaQueVer'"
         ))
 
     return res.success(node)
@@ -817,64 +893,119 @@ class Parser:
     tok = self.current_tok
 
     if tok.type in (TT_INT, TT_FLOAT):
-      res.register_advancement()
-      self.advance()
-      return res.success(NumberNode(tok))
-
-    elif tok.type == TT_STRING:
-      res.register_advancement()
-      self.advance()
-      return res.success(StringNode(tok))
-
-    elif tok.type == TT_IDENTIFIER:
-      res.register_advancement()
-      self.advance()
-      return res.success(VarAccessNode(tok))
-
-    elif tok.type == TT_LPAREN:
-      res.register_advancement()
-      self.advance()
-      expr = res.register(self.expr())
-      if res.error: return res
-      if self.current_tok.type == TT_RPAREN:
         res.register_advancement()
         self.advance()
-        return res.success(expr)
-      else:
-        return res.failure(InvalidSyntaxError(
-          self.current_tok.pos_start, self.current_tok.pos_end,
-          "Expected ')'"
-        ))
+        return res.success(NumberNode(tok))
+
+    elif tok.type == TT_STRING:
+        res.register_advancement()
+        self.advance()
+        return res.success(StringNode(tok))
+
+    elif tok.type == TT_IDENTIFIER:
+        res.register_advancement()
+        self.advance()
+
+        # Comprobar si es una llamada a método: obj.metodo()
+        if self.current_tok.type == TT_DOT:
+            res.register_advancement()
+            self.advance()
+
+            if self.current_tok.type != TT_IDENTIFIER:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Se esperaba el nombre del método después de '.'"
+                ))
+
+            method_name_tok = self.current_tok
+            res.register_advancement()
+            self.advance()
+
+            if self.current_tok.type != TT_LPAREN:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Se esperaba '(' después del nombre del método"
+                ))
+
+            res.register_advancement()
+            self.advance()
+
+            # Obtener los argumentos del método
+            arg_nodes = []
+            if self.current_tok.type != TT_RPAREN:
+                arg_nodes.append(res.register(self.expr()))
+                if res.error: return res
+
+                while self.current_tok.type == TT_COMMA:
+                    res.register_advancement()
+                    self.advance()
+                    arg_nodes.append(res.register(self.expr()))
+                    if res.error: return res
+
+                if self.current_tok.type != TT_RPAREN:
+                    return res.failure(InvalidSyntaxError(
+                        self.current_tok.pos_start, self.current_tok.pos_end,
+                        "Se esperaba ',' o ')'"
+                    ))
+
+            res.register_advancement()
+            self.advance()
+            return res.success(MethodCallNode(tok, method_name_tok, arg_nodes))
+
+        # Si no es una llamada a método, es una variable normal
+        return res.success(VarAccessNode(tok))
+
+    elif tok.type == TT_LPAREN:
+        res.register_advancement()
+        self.advance()
+        expr = res.register(self.expr())
+        if res.error: return res
+        if self.current_tok.type == TT_RPAREN:
+            res.register_advancement()
+            self.advance()
+            return res.success(expr)
+        else:
+            return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                "Se esperaba ')'"
+            ))
 
     elif tok.type == TT_LSQUARE:
-      list_expr = res.register(self.list_expr())
-      if res.error: return res
-      return res.success(list_expr)
+        list_expr = res.register(self.list_expr())
+        if res.error: return res
+        return res.success(list_expr)
+
+    elif tok.matches(TT_KEYWORD, 'Clase'):
+        # Manejo de definición de clases
+        class_def = res.register(self.class_def())
+        if res.error: return res
+        return res.success(class_def)
 
     elif tok.matches(TT_KEYWORD, 'PoneteAPensar'):
-      if_expr = res.register(self.if_expr())
-      if res.error: return res
-      return res.success(if_expr)
+        if_expr = res.register(self.if_expr())
+        if res.error: return res
+        return res.success(if_expr)
 
     elif tok.matches(TT_KEYWORD, 'PasarLista'):
-      for_expr = res.register(self.for_expr())
-      if res.error: return res
-      return res.success(for_expr)
+        for_expr = res.register(self.for_expr())
+        if res.error: return res
+        return res.success(for_expr)
 
     elif tok.matches(TT_KEYWORD, 'AhoritaQue'):
-      while_expr = res.register(self.while_expr())
-      if res.error: return res
-      return res.success(while_expr)
+        while_expr = res.register(self.while_expr())
+        if res.error: return res
+        return res.success(while_expr)
 
     elif tok.matches(TT_KEYWORD, 'HacemeElParo'):
-      func_def = res.register(self.func_def())
-      if res.error: return res
-      return res.success(func_def)
+        func_def = res.register(self.func_def())
+        if res.error: return res
+        return res.success(func_def)
 
     return res.failure(InvalidSyntaxError(
-      tok.pos_start, tok.pos_end,
-      "Se esperaba un int, float, identifier, '+', '-', '(', '[', 'PoneteAPensar', 'PasarLista', 'AhoritaQue', 'HacemeElParo'"
+        tok.pos_start, tok.pos_end,
+        "Se esperaba un int, float, string, identifier, 'Clase', '+', '-', '(', '[', 'PoneteAPensar', 'PasarLista', 'AhoritaQue', 'HacemeElParo'"
     ))
+
 
   def list_expr(self):
     res = ParseResult()
@@ -1270,6 +1401,52 @@ class Parser:
         body,
         False  # No auto-return for block functions
     ))
+
+  def class_def(self):
+    res = ParseResult()
+
+    if not self.current_tok.matches(TT_KEYWORD, 'Clase'):
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            "Se esperaba 'Clase'"
+        ))
+
+    res.register_advancement()
+    self.advance()
+
+    if self.current_tok.type != TT_IDENTIFIER:
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            "Se esperaba un identificador para el nombre de la clase"
+        ))
+
+    class_name_tok = self.current_tok
+    res.register_advancement()
+    self.advance()
+
+    if self.current_tok.type != TT_LBRACE:
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            "Se esperaba '{' para el cuerpo de la clase"
+        ))
+
+    res.register_advancement()
+    self.advance()
+
+    body_node = res.register(self.statements())
+    if res.error: return res
+
+    if self.current_tok.type != TT_RBRACE:
+        return res.failure(InvalidSyntaxError(
+            self.current_tok.pos_start, self.current_tok.pos_end,
+            "Se esperaba '}' para cerrar el cuerpo de la clase"
+        ))
+
+    res.register_advancement()
+    self.advance()
+
+    return res.success(ClassDefNode(class_name_tok, body_node))
+
 
   ###################################
 
@@ -1746,6 +1923,25 @@ class Function(BaseFunction):
   def __repr__(self):
     return f"<function {self.name}>"
 
+
+class Object(Value):
+    def __init__(self, class_name, attributes):
+        super().__init__()
+        self.class_name = class_name
+        self.attributes = attributes
+
+    def get_attribute(self, attr_name):
+        return self.attributes.get(attr_name, Boolean.null)
+
+    def set_attribute(self, attr_name, value):
+        self.attributes[attr_name] = value
+
+    def copy(self):
+        return Object(self.class_name, self.attributes.copy()).set_context(self.context)
+
+    def __repr__(self):
+        return f"<Object {self.class_name}>"
+  
 class BuiltInFunction(BaseFunction):
   def __init__(self, name):
     super().__init__(name)
@@ -2252,6 +2448,90 @@ class Interpreter:
         print(" ".join(map(str, values)))
 
         return res.success(Boolean.null)
+  
+  def visit_ClassDefNode(self, node, context):
+    res = RTResult()
+    methods = {}
+
+    # Iterar sobre los elementos del cuerpo de la clase
+    if isinstance(node.body_node, ListNode):
+        for statement in node.body_node.element_nodes:
+            if isinstance(statement, FuncDefNode):
+                # Reutilizar visit_FuncDefNode para crear la función
+                func_res = self.visit_FuncDefNode(statement, context)
+                if func_res.error: return func_res
+
+                func_name = statement.var_name_tok.value
+                methods[func_name] = func_res.value  # Registrar el método
+                print(f"[DEBUG] Método registrado: {func_name}")
+
+    # Crear el objeto de la clase con los métodos
+    class_object = Object(node.class_name_tok.value, methods)
+    context.symbol_table.set(node.class_name_tok.value, class_object)
+    print(f"[DEBUG] Clase registrada: {node.class_name_tok.value}")
+    return res.success(None)
+
+
+
+
+
+  def visit_ClassInstantiationNode(self, node, context):
+    class_def = context.symbol_table.get(node.class_name_tok.value)
+    if not class_def:
+        return RTResult().failure(RTError(
+            node.pos_start, node.pos_end,
+            f"La clase '{node.class_name_tok.value}' no está definida",
+            context
+        ))
+
+    # Crear una instancia con los métodos de la clase
+    instance = Object(node.class_name_tok.value, class_def.attributes.copy())
+    return RTResult().success(instance)
+
+
+
+  def visit_MethodCallNode(self, node, context):
+    # Obtener el objeto desde la tabla de símbolos
+    obj = context.symbol_table.get(node.object_name_tok.value)
+    print(f"[DEBUG] Obj: {obj}")
+    if not isinstance(obj, Object):
+        return RTResult().failure(RTError(
+            node.pos_start, node.pos_end,
+            f"'{node.object_name_tok.value}' no es un objeto válido",
+            context
+        ))
+
+    # Obtener el método del objeto
+    method = obj.attributes.get(node.method_name_tok.value)
+    print(f"[DEBUG] method: {method}")
+    if not method or not isinstance(method, Function):
+        print(f"Entro al coso este")
+        return RTResult().failure(RTError(
+            node.pos_start, node.pos_end,
+            f"'{node.method_name_tok.value}' no es un método válido o no existe",
+            context
+        ))
+
+    # Evaluar los argumentos del método
+    print(f"Paso el if")
+    res = RTResult()
+    args = []
+    for arg_node in node.args:
+        arg = res.register(self.visit(arg_node, context))
+        if res.should_return(): return res
+        args.append(arg)
+
+    # Ejecutar el método con los argumentos
+    return_value = res.register(method.execute(args))
+    print(f"[DEBUG] Return value: {return_value}")
+
+    if res.should_return():
+      print(f"Paso el if2 {res}")
+      return res
+
+    return res.success(return_value)
+
+
 #######################################
 # RUN
 #######################################

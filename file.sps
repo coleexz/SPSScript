@@ -1,5 +1,11 @@
-Ejenie("HOLA")
-Ejenie("Farbizio")
+Clase MiClase {
+    HacemeElParo saludar(nombre) ->
+        Ejenie ("Hola mi nombre es: ")
 
-PoneleQue nombre = Sampale()
-Ejenie(nombre)
+    HacemeElParo e() ->
+        Ejenie("Otra funcion!")    
+}
+
+PoneleQue obj = Nuevo MiClase()
+obj.saludar("Juan")
+obj.e()
