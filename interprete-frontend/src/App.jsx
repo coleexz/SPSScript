@@ -256,7 +256,7 @@ function App() {
 
                 <Box
                     sx={{
-                        flex: 2,
+                        flex: 1,
                         display: "flex",
                         flexDirection: "column",
                         bgcolor: "#252526",
@@ -272,7 +272,7 @@ function App() {
                     <TextField
                         multiline
                         fullWidth
-                        rows={27} // Reduced rows
+                        rows={20} // Reduced rows
                         value={tabs[activeTab]?.content || ""}
                         onChange={(e) => handleContentChange(e.target.value)}
                         variant="outlined"
@@ -310,7 +310,7 @@ function App() {
                     <TextField
                         multiline
                         fullWidth
-                        rows={8} // Reduced rows
+                        rows={15} // Increased rows
                         value={outputContent}
                         variant="outlined"
                         placeholder="La salida aparecerá aquí..."
