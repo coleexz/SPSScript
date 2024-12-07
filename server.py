@@ -13,7 +13,7 @@ def run_script():
         data = request.json
         file_name = data.get('file_name')
         file_content = data.get('file_content')
-        user_input = data.get('input', "")  # Leer entrada del usuario, si existe
+        user_input = data.get('input', None)  # Leer entrada del usuario si existe
 
         if not file_name or not file_content:
             return jsonify({"error": "El nombre y contenido del archivo son obligatorios"}), 400
@@ -21,28 +21,30 @@ def run_script():
         if not file_name.endswith('.sps'):
             return jsonify({"error": "El archivo debe tener la extensión '.sps'"}), 400
 
-        # Escribir el archivo temporalmente
+        # Escribir archivo temporalmente
         with open(file_name, "w") as temp_file:
             temp_file.write(file_content)
         print(f"Archivo {file_name} escrito con contenido:\n{file_content}")
 
-        # Ejecutar el comando
+        # Iniciar el intérprete en un proceso separado
         command = ["python3", "shell.py", file_name]
-        print(f"Ejecutando comando: {' '.join(command)}")
-
-        result = subprocess.run(
+        process = subprocess.Popen(
             command,
             text=True,
-            capture_output=True,
-            input=user_input,  # Enviar la entrada del usuario al comando
-            timeout=10  # Establecer un tiempo máximo de espera
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
         )
 
-        # Capturar salida
-        stdout = result.stdout.strip()
-        stderr = result.stderr.strip()
-        return_code = result.returncode
+        # Si hay input del usuario, enviarlo al proceso
+        stdout, stderr = process.communicate(input=user_input if user_input else "")
 
+        if "EOFError" in stderr:
+            # Detectar si el intérprete está esperando input
+            return jsonify({"awaiting_input": True, "output": stdout}), 200
+
+        # Capturar salida del proceso
+        return_code = process.returncode
         print(f"STDOUT:\n{stdout}")
         print(f"STDERR:\n{stderr}")
         print(f"Return Code: {return_code}")
@@ -52,13 +54,10 @@ def run_script():
         else:
             return jsonify({"error": stderr}), 500
 
-    except subprocess.TimeoutExpired:
-        print("Error: El proceso tomó demasiado tiempo y fue detenido.")
-        return jsonify({"error": "El proceso tomó demasiado tiempo y fue detenido."}), 500
-
     except Exception as e:
         print(f"Error inesperado: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
