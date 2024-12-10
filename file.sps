@@ -1,11 +1,15 @@
 Clase MiClase {
+    PoneleQue xd = "Colageno"
+
     HacemeElParo saludar(nombre) ->
-        Ejenie ("Hola mi nombre es: ")
+        Ejenie(Propio.xd)
 
     HacemeElParo e() ->
-        Ejenie("Otra funcion!")    
+        Ejenie("Otra función!")
 }
+
+HacemeElParo test(nombre, nombre2) ->
+    Ejenie("Test")
 
 PoneleQue obj = Nuevo MiClase()
 obj.saludar("Juan")
-obj.e()

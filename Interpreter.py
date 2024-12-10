@@ -46,17 +46,39 @@ class Interpreter:
   def visit_VarAccessNode(self, node, context):
     res = RTResult()
     var_name = node.var_name_tok.value
-    value = context.symbol_table.get(var_name)
 
+    if var_name.startswith("Propio."):
+        # Manejar accesos de atributos con 'Propio'
+        attribute_name = var_name.split(".")[1]
+        obj = context.symbol_table.get("Propio")
+        if not isinstance(obj, Object):
+            return res.failure(RTError(
+                node.pos_start, node.pos_end,
+                "'Propio' no se refiere a un objeto válido",
+                context
+            ))
+
+        value = obj.get_attribute(attribute_name)
+        if value is Boolean.null:
+            return res.failure(RTError(
+                node.pos_start, node.pos_end,
+                f"El atributo '{attribute_name}' no existe en el objeto",
+                context
+            ))
+
+        return res.success(value)
+
+    value = context.symbol_table.get(var_name)
     if not value:
-      return res.failure(RTError(
-        node.pos_start, node.pos_end,
-        f"'{var_name}' is not defined",
-        context
-      ))
+        return res.failure(RTError(
+            node.pos_start, node.pos_end,
+            f"'{var_name}' no está definido",
+            context
+        ))
 
     value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
     return res.success(value)
+
 
   def visit_VarAssignNode(self, node, context):
     res = RTResult()
@@ -269,6 +291,7 @@ class Interpreter:
             value = res.register(self.visit(expr, context))
             if res.should_return(): return res
             values.append(value)
+      
 
         # Print the concatenated string representations of all evaluated values
         print(" ".join(map(str, values)))
@@ -278,24 +301,36 @@ class Interpreter:
   def visit_ClassDefNode(self, node, context):
     res = RTResult()
     methods = {}
+    attributes = {}
 
     # Iterar sobre los elementos del cuerpo de la clase
     if isinstance(node.body_node, ListNode):
         for statement in node.body_node.element_nodes:
             if isinstance(statement, FuncDefNode):
-                # Reutilizar visit_FuncDefNode para crear la función
                 func_res = self.visit_FuncDefNode(statement, context)
                 if func_res.error: return func_res
 
                 func_name = statement.var_name_tok.value
                 methods[func_name] = func_res.value  # Registrar el método
-                print(f"[DEBUG] Método registrado: {func_name}")
 
-    # Crear el objeto de la clase con los métodos
+            elif isinstance(statement, VarAssignNode):
+                # Registrar los atributos de clase
+                print(f"Hizo una variable: {statement.var_name_tok.value}")
+                var_name = statement.var_name_tok.value
+                value_res = self.visit(statement.value_node, context)
+                if value_res.error: 
+                  print(f"Error en la variable: {var_name}")
+                  return value_res
+                print(f"Valor de la variable: {value_res.value}")
+                attributes[var_name] = value_res.value
+
+    # Crear el objeto de la clase con los métodos y atributos
     class_object = Object(node.class_name_tok.value, methods)
+    class_object.attributes.update(attributes)
+    print(f"Clase: {node.class_name_tok.value}")
     context.symbol_table.set(node.class_name_tok.value, class_object)
-    print(f"[DEBUG] Clase registrada: {node.class_name_tok.value}")
     return res.success(None)
+
 
 
 
@@ -310,16 +345,23 @@ class Interpreter:
             context
         ))
 
-    # Crear una instancia con los métodos de la clase
+    # Crear una instancia con los métodos y atributos de la clase
     instance = Object(node.class_name_tok.value, class_def.attributes.copy())
+    init_method = instance.attributes.get("__init__")
+    # Llamar al constructor (__init__) si existe
+    if init_method and isinstance(init_method, Function):
+        res = RTResult()
+        res.register(init_method.execute([]))
+        if res.should_return():
+            return res
+        
     return RTResult().success(instance)
 
 
 
+
   def visit_MethodCallNode(self, node, context):
-    # Obtener el objeto desde la tabla de símbolos
     obj = context.symbol_table.get(node.object_name_tok.value)
-    print(f"[DEBUG] Obj: {obj}")
     if not isinstance(obj, Object):
         return RTResult().failure(RTError(
             node.pos_start, node.pos_end,
@@ -327,32 +369,24 @@ class Interpreter:
             context
         ))
 
-    # Obtener el método del objeto
     method = obj.attributes.get(node.method_name_tok.value)
-    print(f"[DEBUG] method: {method}")
     if not method or not isinstance(method, Function):
-        print(f"Entro al coso este")
         return RTResult().failure(RTError(
             node.pos_start, node.pos_end,
             f"'{node.method_name_tok.value}' no es un método válido o no existe",
             context
         ))
 
-    # Evaluar los argumentos del método
-    print(f"Paso el if")
     res = RTResult()
-    args = []
-    for arg_node in node.args:
-        arg = res.register(self.visit(arg_node, context))
-        if res.should_return(): return res
-        args.append(arg)
-
-    # Ejecutar el método con los argumentos
-    return_value = res.register(method.execute(args))
-    print(f"[DEBUG] Return value: {return_value}")
-
+    args = [res.register(self.visit(arg_node, context)) for arg_node in node.args]
     if res.should_return():
-      print(f"Paso el if2 {res}")
-      return res
+        return res
+
+    # Pasar el objeto como Propio
+    method.context.symbol_table.set("Propio", obj)
+    return_value = res.register(method.execute(args))
+    if res.should_return():
+        return res
 
     return res.success(return_value)
+
