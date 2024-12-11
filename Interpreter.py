@@ -315,25 +315,16 @@ class Interpreter:
 
             elif isinstance(statement, VarAssignNode):
                 # Registrar los atributos de clase
-                print(f"Hizo una variable: {statement.var_name_tok.value}")
                 var_name = statement.var_name_tok.value
                 value_res = self.visit(statement.value_node, context)
-                if value_res.error: 
-                  print(f"Error en la variable: {var_name}")
-                  return value_res
-                print(f"Valor de la variable: {value_res.value}")
+                if value_res.error:
+                    return value_res
                 attributes[var_name] = value_res.value
 
     # Crear el objeto de la clase con los métodos y atributos
-    class_object = Object(node.class_name_tok.value, methods)
-    class_object.attributes.update(attributes)
-    print(f"Clase: {node.class_name_tok.value}")
+    class_object = Object(node.class_name_tok.value, methods, attributes)
     context.symbol_table.set(node.class_name_tok.value, class_object)
     return res.success(None)
-
-
-
-
 
 
   def visit_ClassInstantiationNode(self, node, context):
@@ -345,18 +336,18 @@ class Interpreter:
             context
         ))
 
-    # Crear una instancia con los métodos y atributos de la clase
-    instance = Object(node.class_name_tok.value, class_def.attributes.copy())
-    init_method = instance.attributes.get("__init__")
+    # Crear una instancia con métodos y atributos de la clase
+    instance = Object(node.class_name_tok.value, class_def.methods.copy(), class_def.attributes.copy())
+    init_method = instance.methods.get("__init__")
+
     # Llamar al constructor (__init__) si existe
     if init_method and isinstance(init_method, Function):
         res = RTResult()
         res.register(init_method.execute([]))
         if res.should_return():
             return res
-        
-    return RTResult().success(instance)
 
+    return RTResult().success(instance)
 
 
 
@@ -369,7 +360,7 @@ class Interpreter:
             context
         ))
 
-    method = obj.attributes.get(node.method_name_tok.value)
+    method = obj.methods.get(node.method_name_tok.value)
     if not method or not isinstance(method, Function):
         return RTResult().failure(RTError(
             node.pos_start, node.pos_end,
@@ -382,11 +373,13 @@ class Interpreter:
     if res.should_return():
         return res
 
-    # Pasar el objeto como Propio
+    # Configurar Propio como la instancia actual
     method.context.symbol_table.set("Propio", obj)
     return_value = res.register(method.execute(args))
     if res.should_return():
         return res
 
     return res.success(return_value)
+
+
 

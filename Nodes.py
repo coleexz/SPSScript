@@ -177,6 +177,7 @@ class MethodCallNode:
 
 class PrintNode:
     def __init__(self, exprs, pos_start, pos_end):
-        self.exprs = exprs
+        # Convertir las expresiones en una lista para manejo consistente
+        self.exprs = [exprs] if not isinstance(exprs, list) else exprs
         self.pos_start = pos_start
         self.pos_end = pos_end
