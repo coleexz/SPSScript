@@ -177,6 +177,15 @@ class MethodCallNode:
 
 class PrintNode:
     def __init__(self, exprs, pos_start, pos_end):
-        self.exprs = exprs
+        # Convertir las expresiones en una lista para manejo consistente
+        self.exprs = [exprs] if not isinstance(exprs, list) else exprs
         self.pos_start = pos_start
         self.pos_end = pos_end
+
+###ATRIBUTES######
+class AttributeAccessNode:
+    def __init__(self, object_name_tok, attribute_name_tok):
+        self.object_name_tok = object_name_tok
+        self.attribute_name_tok = attribute_name_tok
+        self.pos_start = object_name_tok.pos_start
+        self.pos_end = attribute_name_tok.pos_end

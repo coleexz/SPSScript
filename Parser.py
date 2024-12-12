@@ -164,6 +164,7 @@ class Parser:
 
             res.register_advancement()
             self.advance()
+            # Pasar los argumentos como una lista
             return res.success(PrintNode(args, pos_start, self.current_tok.pos_end.copy()))
 
 
@@ -436,6 +437,29 @@ class Parser:
         class_def = res.register(self.class_def())
         if res.error: return res
         return res.success(class_def)
+    
+    elif tok.matches(TT_KEYWORD, 'Propio'):
+      res.register_advancement()
+      self.advance()
+
+      if self.current_tok.type == TT_DOT:
+          res.register_advancement()
+          self.advance()
+
+          if self.current_tok.type != TT_IDENTIFIER:
+              return res.failure(InvalidSyntaxError(
+                  self.current_tok.pos_start, self.current_tok.pos_end,
+                  "Se esperaba un identificador después de 'Propio.'"
+              ))
+
+          attribute_name_tok = self.current_tok
+          res.register_advancement()
+          self.advance()
+
+          # Crear un nodo de acceso a atributos
+          return res.success(AttributeAccessNode(tok, attribute_name_tok))
+
+
 
     elif tok.matches(TT_KEYWORD, 'PoneteAPensar'):
         if_expr = res.register(self.if_expr())

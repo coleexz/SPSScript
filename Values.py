@@ -328,32 +328,38 @@ class BaseFunction(Value):
 
   def check_args(self, arg_names, args):
     res = RTResult()
+    has_var_args = any(arg.startswith("*") for arg in arg_names)
 
-    if len(args) > len(arg_names):
-      return res.failure(RTError(
-        self.pos_start, self.pos_end,
-        f"{len(args) - len(arg_names)} too many args passed into {self}",
-        self.context
-      ))
+    if not has_var_args:
+        if len(args) > len(arg_names):
+            return res.failure(RTError(
+                self.pos_start, self.pos_end,
+                f"{len(args) - len(arg_names)} too many args passed into {self}",
+                self.context
+            ))
 
-    if len(args) < len(arg_names):
-      return res.failure(RTError(
-        self.pos_start, self.pos_end,
-        f"{len(arg_names) - len(args)} too few args passed into {self}",
-        self.context
-      ))
+        # Permitir menos argumentos si son opcionales
+        if len(args) < len(arg_names):
+            return res.success(None)
 
     return res.success(None)
 
+
   def populate_args(self, arg_names, args, exec_ctx):
-    for i in range(len(args)):
-      arg_name = arg_names[i]
-      arg_value = args[i]
-      arg_value.set_context(exec_ctx)
-      exec_ctx.symbol_table.set(arg_name, arg_value)
+    for i in range(len(arg_names)):
+        arg_name = arg_names[i]
+        if arg_name.startswith("*"):
+            # Agregar los argumentos restantes como lista
+            exec_ctx.symbol_table.set(arg_name[1:], List(args[i:]))
+            break
+        else:
+            exec_ctx.symbol_table.set(arg_name, args[i] if i < len(args) else Boolean.null)
+
+
 
   def check_and_populate_args(self, arg_names, args, exec_ctx):
     res = RTResult()
+    print(f"Check Args: {arg_names} Args: {args}")
     res.register(self.check_args(arg_names, args))
     if res.should_return(): return res
     self.populate_args(arg_names, args, exec_ctx)
@@ -392,23 +398,31 @@ class Function(BaseFunction):
 
 
 class Object(Value):
-    def __init__(self, class_name, attributes):
+    def __init__(self, class_name, methods, attributes=None):
         super().__init__()
         self.class_name = class_name
-        self.attributes = attributes
+        self.methods = methods
+        self.attributes = attributes or {}
+
 
     def get_attribute(self, attr_name):
-        return self.attributes.get(attr_name, Boolean.null)
-
+        if attr_name in self.attributes:
+            print(f"Atributo '{attr_name}' encontrado con valor: {self.attributes[attr_name]}")
+            return self.attributes[attr_name]
+        print(f"Atributo '{attr_name}' no encontrado en la instancia.")
+        return None
+    
     def set_attribute(self, attr_name, value):
         self.attributes[attr_name] = value
 
     def copy(self):
-        return Object(self.class_name, self.attributes.copy()).set_context(self.context)
+        return Object(self.class_name, self.methods.copy(), self.attributes.copy())
 
     def __repr__(self):
         return f"<Object {self.class_name}>"
-  
+
+
+
 class BuiltInFunction(BaseFunction):
   def __init__(self, name):
     super().__init__(name)
@@ -442,9 +456,17 @@ class BuiltInFunction(BaseFunction):
   #####################################
 
   def execute_print(self, exec_ctx):
-    print(str(exec_ctx.symbol_table.get('value')))
+    # Obtener todos los valores como una lista
+    value = exec_ctx.symbol_table.get('value')
+    if isinstance(value, List):
+        output = " ".join(map(str, value.elements))
+    else:
+        output = str(value)
+    print(output)
     return RTResult().success(Boolean.null)
-  execute_print.arg_names = ['value']
+  execute_print.arg_names = ['*value']  # Permitir múltiples valores
+
+
 
   def execute_print_ret(self, exec_ctx):
     return RTResult().success(String(str(exec_ctx.symbol_table.get('value'))))
