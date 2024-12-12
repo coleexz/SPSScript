@@ -46,24 +46,18 @@ class Interpreter:
   def visit_VarAccessNode(self, node, context):
     res = RTResult()
     var_name = node.var_name_tok.value
-    print(f"Intentando acceder a la variable: '{var_name}'")
+
 
     # Manejar acceso a atributos con 'Propio'
     if var_name.startswith("Propio."):
-        print(f"Detectado acceso a atributo con 'Propio': {var_name}")
+  
         # Extraer el nombre del atributo
         attribute_name = var_name.split(".")[1]
-        print(f"Atributo solicitado: '{attribute_name}'")
 
         # Obtener 'Propio' del contexto
         obj = context.symbol_table.get("Propio")
-        if not obj:
-            print("Error: 'Propio' no está definido en el contexto.")
-        else:
-            print(f"'Propio' encontrado en el contexto: {obj}")
 
         if not isinstance(obj, Object):
-            print("Error: 'Propio' no es un objeto válido.")
             return res.failure(RTError(
                 node.pos_start, node.pos_end,
                 "'Propio' no se refiere a un objeto válido",
@@ -73,28 +67,23 @@ class Interpreter:
         # Obtener el valor del atributo
         value = obj.get_attribute(attribute_name)
         if value is None:
-            print(f"Error: El atributo '{attribute_name}' no existe en el objeto.")
             return res.failure(RTError(
                 node.pos_start, node.pos_end,
                 f"El atributo '{attribute_name}' no existe en el objeto",
                 context
             ))
 
-        print(f"Atributo '{attribute_name}' encontrado con valor: {value}")
         return res.success(value)
 
     # Acceso a variables normales
-    print(f"Acceso a variable normal: '{var_name}'")
     value = context.symbol_table.get(var_name)
     if value is None:
-        print(f"Error: La variable '{var_name}' no está definida en el contexto.")
         return res.failure(RTError(
             node.pos_start, node.pos_end,
             f"'{var_name}' no está definido",
             context
         ))
 
-    print(f"Variable '{var_name}' encontrada con valor: {value}")
     value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
     return res.success(value)
 
@@ -330,18 +319,17 @@ class Interpreter:
                 func_res = self.visit_FuncDefNode(statement, context)
                 if func_res.error: return func_res
                 methods[statement.var_name_tok.value] = func_res.value
-                print(f"Registrado método: {statement.var_name_tok.value}")
-
+            
             elif isinstance(statement, VarAssignNode):
                 attr_name = statement.var_name_tok.value
                 attr_value = res.register(self.visit(statement.value_node, context))
                 if res.should_return(): return res
                 attributes[attr_name] = attr_value
-                print(f"Registrado atributo: {attr_name} con valor: {attr_value}")
+
 
     class_object = Object(node.class_name_tok.value, methods, attributes)
     context.symbol_table.set(node.class_name_tok.value, class_object)
-    print(f"Clase registrada: {node.class_name_tok.value} con atributos: {attributes} y métodos: {methods}")
+   
     return res.success(None)
 
 
@@ -362,8 +350,7 @@ class Interpreter:
         methods=class_def.methods.copy(),
         attributes=class_def.attributes.copy()
     )
-    print(f"Instancia creada de la clase: {class_def.class_name}")
-    print(f"Atributos copiados: {instance.attributes}")
+
 
     init_method = instance.methods.get("__init__")
     if init_method:
@@ -387,9 +374,6 @@ class Interpreter:
             context
         ))
 
-    print(f"Llamando al método: {node.method_name_tok.value} del objeto: {obj.class_name}")
-    print(f"Atributos disponibles en la instancia: {obj.attributes}")
-
     method = obj.methods.get(node.method_name_tok.value)
     if not method:
         return res.failure(RTError(
@@ -399,7 +383,6 @@ class Interpreter:
         ))
 
     method.context.symbol_table.set("Propio", obj)
-    print(f"Propio configurado correctamente en el contexto del método.")
 
     args = [res.register(self.visit(arg, context)) for arg in node.args]
     if res.should_return(): return res
@@ -413,8 +396,6 @@ class Interpreter:
     res = RTResult()
     object_name = node.object_name_tok.value
     attribute_name = node.attribute_name_tok.value
-
-    print(f"Intentando acceder al atributo '{attribute_name}' del objeto '{object_name}'")
 
     # Obtener el objeto del contexto
     obj = context.symbol_table.get(object_name)
@@ -434,7 +415,7 @@ class Interpreter:
             context
         ))
 
-    print(f"Atributo '{attribute_name}' encontrado con valor: {value}")
+
     return res.success(value)
 
 

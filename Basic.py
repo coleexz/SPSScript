@@ -2463,12 +2463,12 @@ class Interpreter:
 
                 func_name = statement.var_name_tok.value
                 methods[func_name] = func_res.value  # Registrar el método
-                print(f"[DEBUG] Método registrado: {func_name}")
+
 
     # Crear el objeto de la clase con los métodos
     class_object = Object(node.class_name_tok.value, methods)
     context.symbol_table.set(node.class_name_tok.value, class_object)
-    print(f"[DEBUG] Clase registrada: {node.class_name_tok.value}")
+
     return res.success(None)
 
 
@@ -2493,7 +2493,7 @@ class Interpreter:
   def visit_MethodCallNode(self, node, context):
     # Obtener el objeto desde la tabla de símbolos
     obj = context.symbol_table.get(node.object_name_tok.value)
-    print(f"[DEBUG] Obj: {obj}")
+
     if not isinstance(obj, Object):
         return RTResult().failure(RTError(
             node.pos_start, node.pos_end,
@@ -2503,9 +2503,8 @@ class Interpreter:
 
     # Obtener el método del objeto
     method = obj.attributes.get(node.method_name_tok.value)
-    print(f"[DEBUG] method: {method}")
+
     if not method or not isinstance(method, Function):
-        print(f"Entro al coso este")
         return RTResult().failure(RTError(
             node.pos_start, node.pos_end,
             f"'{node.method_name_tok.value}' no es un método válido o no existe",
@@ -2513,7 +2512,6 @@ class Interpreter:
         ))
 
     # Evaluar los argumentos del método
-    print(f"Paso el if")
     res = RTResult()
     args = []
     for arg_node in node.args:
@@ -2523,7 +2521,6 @@ class Interpreter:
 
     # Ejecutar el método con los argumentos
     return_value = res.register(method.execute(args))
-    print(f"[DEBUG] Return value: {return_value}")
 
     if res.should_return():
       print(f"Paso el if2 {res}")
