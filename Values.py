@@ -404,19 +404,23 @@ class Object(Value):
         self.methods = methods
         self.attributes = attributes or {}
 
-    def get_attribute(self, attr_name):
-        # Devuelve el atributo solicitado o None si no existe
-        return self.attributes.get(attr_name)
 
+    def get_attribute(self, attr_name):
+        if attr_name in self.attributes:
+            print(f"Atributo '{attr_name}' encontrado con valor: {self.attributes[attr_name]}")
+            return self.attributes[attr_name]
+        print(f"Atributo '{attr_name}' no encontrado en la instancia.")
+        return None
+    
     def set_attribute(self, attr_name, value):
-        # Establece un nuevo atributo en el objeto
         self.attributes[attr_name] = value
 
     def copy(self):
-        return Object(self.class_name, self.methods.copy(), self.attributes.copy()).set_context(self.context)
+        return Object(self.class_name, self.methods.copy(), self.attributes.copy())
 
     def __repr__(self):
         return f"<Object {self.class_name}>"
+
 
 
 class BuiltInFunction(BaseFunction):

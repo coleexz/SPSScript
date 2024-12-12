@@ -443,20 +443,22 @@ class Parser:
       self.advance()
 
       if self.current_tok.type == TT_DOT:
-        res.register_advancement()
-        self.advance()
+          res.register_advancement()
+          self.advance()
 
-        if self.current_tok.type != TT_IDENTIFIER:
-            return res.failure(InvalidSyntaxError(
-                self.current_tok.pos_start, self.current_tok.pos_end,
-                "Se esperaba un identificador después de 'Propio.'"
-            ))
+          if self.current_tok.type != TT_IDENTIFIER:
+              return res.failure(InvalidSyntaxError(
+                  self.current_tok.pos_start, self.current_tok.pos_end,
+                  "Se esperaba un identificador después de 'Propio.'"
+              ))
 
-        method_or_attribute = self.current_tok
-        res.register_advancement()
-        self.advance()
+          attribute_name_tok = self.current_tok
+          res.register_advancement()
+          self.advance()
 
-        return res.success(VarAccessNode(method_or_attribute))
+          # Crear un nodo de acceso a atributos
+          return res.success(AttributeAccessNode(tok, attribute_name_tok))
+
 
 
     elif tok.matches(TT_KEYWORD, 'PoneteAPensar'):
