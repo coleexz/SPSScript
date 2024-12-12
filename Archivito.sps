@@ -1,2 +1,2 @@
 PoneleQue nombre = Sampale()
-Ejenie(nombre)
+Ejenie("Mi nombre es: ",nombre)

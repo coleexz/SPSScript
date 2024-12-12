@@ -261,7 +261,7 @@ function App() {
                         flexDirection: "column",
                         bgcolor: "#252526",
                         borderRadius: 1,
-                        p: 2,
+                        p: 1,
                         overflow: "hidden",
                         border: "1px solid #444",
                     }}
@@ -272,7 +272,7 @@ function App() {
                     <TextField
                         multiline
                         fullWidth
-                        rows={20} // Reduced rows
+                        rows={15.9} // Reduced rows
                         value={tabs[activeTab]?.content || ""}
                         onChange={(e) => handleContentChange(e.target.value)}
                         variant="outlined"
@@ -299,7 +299,7 @@ function App() {
                         flexDirection: "column",
                         bgcolor: "#252526",
                         borderRadius: 1,
-                        p: 2,
+                        p: 1,
                         overflow: "hidden",
                         width: "70%",
                     }}
@@ -310,7 +310,7 @@ function App() {
                     <TextField
                         multiline
                         fullWidth
-                        rows={15} // Increased rows
+                        rows={12} // Increased rows
                         value={outputContent}
                         variant="outlined"
                         placeholder="La salida aparecerá aquí..."

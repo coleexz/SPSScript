@@ -1941,7 +1941,7 @@ class Object(Value):
 
     def __repr__(self):
         return f"<Object {self.class_name}>"
-  
+
 class BuiltInFunction(BaseFunction):
   def __init__(self, name):
     super().__init__(name)
@@ -1988,9 +1988,6 @@ class BuiltInFunction(BaseFunction):
     text = input()
     return RTResult().success(String(text))
   execute_input.arg_names = []
-
-
-
 
   def execute_clear(self, exec_ctx):
     os.system('cls' if os.name == 'nt' else 'cls')
@@ -2448,7 +2445,7 @@ class Interpreter:
         print(" ".join(map(str, values)))
 
         return res.success(Boolean.null)
-  
+
   def visit_ClassDefNode(self, node, context):
     res = RTResult()
     methods = {}
