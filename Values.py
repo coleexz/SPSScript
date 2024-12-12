@@ -359,7 +359,6 @@ class BaseFunction(Value):
 
   def check_and_populate_args(self, arg_names, args, exec_ctx):
     res = RTResult()
-    print(f"Check Args: {arg_names} Args: {args}")
     res.register(self.check_args(arg_names, args))
     if res.should_return(): return res
     self.populate_args(arg_names, args, exec_ctx)
@@ -407,9 +406,8 @@ class Object(Value):
 
     def get_attribute(self, attr_name):
         if attr_name in self.attributes:
-            print(f"Atributo '{attr_name}' encontrado con valor: {self.attributes[attr_name]}")
+          
             return self.attributes[attr_name]
-        print(f"Atributo '{attr_name}' no encontrado en la instancia.")
         return None
     
     def set_attribute(self, attr_name, value):
