@@ -1,8 +1,8 @@
 Clase MiClase {
-    PoneleQue xd = "Colageno"
-    PoneleQue Ola = "Caballo"
+    PoneleQue Dat = "Dato1"
+    PoneleQue Ola = "Dato2"
     HacemeElParo saludar(nombre)
-        Ejenie("Hola", nombre, Propio.xd, Propio.Ola)
+        Ejenie("Hola", nombre, Propio.Dat, Propio.Ola)
         Ejenie ("Ehhhh")
         Ejenie(Propio.Ola, "Funcion")
         Cheque
